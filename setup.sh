@@ -92,7 +92,7 @@ rm /mnt/root/setup.sh
 escDisk=$( echo "$disk" | sed -e "s/\//\\\\\//g" )
 sed -i "s/dev\/sda3/${escDisk}1/g" /mnt/boot/syslinux/syslinux.cfg
 
-curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/main/hyparvisor.sh >  /mnt/root/hyparvisor.sh
-chmod +x /mnt/root/hyparvisor.sh
+curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/main/hyparvisor.sh >  /mnt/root/setup.sh
+chmod +x /mnt/root/setup.sh
 
 reboot
