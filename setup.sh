@@ -53,7 +53,7 @@ fi
 
 
 if ! mountpoint -q -- "/mnt"; then
-  echo >&2 "/mnt is not a mount point!"
+	echo >&2 "/mnt is not a mount point!"
 	exit 1
 fi
 
@@ -92,7 +92,7 @@ rm /mnt/root/setup.sh
 escDisk=$( echo "$disk" | sed -e "s/\//\\\\\//g" )
 sed -i "s/dev\/sda3/${escDisk}1/g" /mnt/boot/syslinux/syslinux.cfg
 
-curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/main/hyparvisor.sh >  /mnt/root/setup.sh
-chmod +x /mnt/root/setup.sh
+curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/release/update.sh >  /mnt/root/update.sh
+chmod +x /mnt/root/update.sh
 
 reboot
