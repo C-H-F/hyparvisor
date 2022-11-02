@@ -1,32 +1,36 @@
-import { component$, useStylesScoped$ } from '@builder.io/qwik';
+import { component$, useContext, useStylesScoped$ } from '@builder.io/qwik';
+import { applicationContext, ApplicationContext } from '~/ApplicationState';
+import { checkLogin, setCredentials } from '~/logic';
 import { QwikLogo } from '../icons/qwik';
 import styles from './header.css?inline';
 
 export default component$(() => {
   useStylesScoped$(styles);
-
+  const appCtx = useContext<ApplicationContext>(applicationContext);
   return (
     <header>
       <div class="logo">
-        <a href="https://qwik.builder.io/" target="_blank">
+        <a href="/" target="_top">
           <QwikLogo />
         </a>
       </div>
       <ul>
+        {
+          appCtx.updateAvailable
+          ? <li>
+              <a href="#">System updates available!</a>
+            </li>
+          : null
+        }
         <li>
-          <a href="https://qwik.builder.io/docs/components/overview/" target="_blank">
-            Docs
-          </a>
-        </li>
-        <li>
-          <a href="https://qwik.builder.io/examples/introduction/hello-world/" target="_blank">
-            Examples
-          </a>
-        </li>
-        <li>
-          <a href="https://qwik.builder.io/tutorial/welcome/overview/" target="_blank">
-            Tutorials
-          </a>
+          {
+            appCtx.user
+            ? <a href="#" onClick$={async () => {
+                setCredentials(null);
+                await checkLogin(appCtx);
+              }} preventDefault:click>{appCtx.user}</a>
+            : <a href="#">Login</a>
+          }
         </li>
       </ul>
     </header>
