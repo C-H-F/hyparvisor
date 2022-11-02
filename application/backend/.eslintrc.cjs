@@ -1,0 +1,40 @@
+module.exports = {
+  root: true,
+  env: {
+    browser: true,
+    es2021: true,
+    node: true,
+  },
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:qwik/recommended',
+  ],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    tsconfigRootDir: __dirname,
+    project: ['./tsconfig.json'],
+    ecmaVersion: 2021,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
+  },
+  plugins: ['@typescript-eslint', 'prettier'],
+  rules: {
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/explicit-module-boundary-types': 'error',
+    '@typescript-eslint/no-inferrable-types': 'warn',
+    '@typescript-eslint/no-non-null-assertion': 'warn',
+    '@typescript-eslint/no-empty-interface': 'error',
+    '@typescript-eslint/no-namespace': 'error',
+    '@typescript-eslint/no-empty-function': 'error',
+    '@typescript-eslint/no-this-alias': 'error',
+    '@typescript-eslint/ban-types': 'error',
+    '@typescript-eslint/ban-ts-comment': 'error',
+    'prefer-spread': 'off',
+    'no-case-declarations': 'error',
+    'no-console': 'off',
+    '@typescript-eslint/no-unused-vars': ['warn'],
+  },
+};

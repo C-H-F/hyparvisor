@@ -1,0 +1,28 @@
+{
+  "name": "hyparvisor-server",
+  "version": "0.0.1",
+  "description": "Backend server application for hyparvisor",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "esrun src/index.ts --dev",
+    "build": "esbuild src/index.ts --bundle --format=esm --platform=node --outfile=_dist/server.js",
+    "build2": "ts-node-esm src/index.ts",
+    "start": "npm run dev"
+  },
+  "author": "C-H-F",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@types/node": "^18.8.3",
+    "@types/ws": "^8.5.3",
+    "ssh2": "^1.11.0",
+    "ws": "^8.9.0"
+  },
+  "devDependencies": {
+    "@digitak/esrun": "^3.2.11",
+    "@types/ssh2": "^1.11.6",
+    "esbuild": "^0.15.10",
+    "eslint": "^8.25.0",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1"
+  }
+}
