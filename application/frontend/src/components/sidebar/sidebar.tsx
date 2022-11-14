@@ -29,11 +29,11 @@ export default component$(() => {
               <ComputerIcon /> Virtual Machines
             </a>
             <ul>
-              { appCtx.vms.map(vm =>
+              {appCtx.vms.map((vm) => (
                 <li>
-                  <a href={'vm/' + encodeURIComponent(vm.name)}>{vm.name}</a>
+                  <a href={'/vm/' + encodeURIComponent(vm.name)}>{vm.name}</a>
                 </li>
-              )}
+              ))}
             </ul>
           </div>
           <div>
