@@ -17,7 +17,12 @@ groupadd sysupgrade
 echo "
 %sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman -Syu
 %sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman --noconfirm -Syu
+%sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman -Su
+%sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman --noconfirm -Su
 %sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman --noconfirm -S archlinux-keyring
+%sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman -Sy
+%sysupgrade ALL=(ALL) NOPASSWD: /usr/bin/pacman -Qu
+
 %sudo ALL=(ALL:ALL) ALL
 " >> /etc/sudoers
 

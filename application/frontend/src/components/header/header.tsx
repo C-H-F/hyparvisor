@@ -15,22 +15,26 @@ export default component$(() => {
         </a>
       </div>
       <ul>
-        {
-          appCtx.updateAvailable
-          ? <li>
-              <a href="#">System updates available!</a>
-            </li>
-          : null
-        }
+        {appCtx.updateAvailable ? (
+          <li>
+            <a href="/system/update">System updates available!</a>
+          </li>
+        ) : null}
         <li>
-          {
-            appCtx.user
-            ? <a href="#" onClick$={async () => {
+          {appCtx.user ? (
+            <a
+              href="#"
+              onClick$={async () => {
                 setCredentials(null);
                 await checkLogin(appCtx);
-              }} preventDefault:click>{appCtx.user}</a>
-            : <a href="#">Login</a>
-          }
+              }}
+              preventDefault:click
+            >
+              {appCtx.user}
+            </a>
+          ) : (
+            <a href="#">Login</a>
+          )}
         </li>
       </ul>
     </header>
