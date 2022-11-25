@@ -1,4 +1,5 @@
 import { ApplicationContext } from './ApplicationState';
+import { BlockDevice } from './models/BlockDevice';
 
 export type Credentials = {
   wsUrl: string;
@@ -182,6 +183,14 @@ export async function getUpdateInformation(): Promise<UpdateInformation> {
 }
 export async function isUpdateAvailable(): Promise<boolean> {
   return (await getUpdateInformation()).packages.length > 0;
+}
+export async function getBlockDevices(): Promise<BlockDevice[]> {
+  const response = await runCommand('lsblk -bfJ');
+  let result: any = null;
+  try {
+    result = JSON.parse(response.stdout);
+  } catch (_) {}
+  return result?.blockdevices || [];
 }
 
 function parseTable(
