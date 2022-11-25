@@ -7,7 +7,7 @@ pacman --noconfirm -Sy
 pacman --noconfirm -S archlinux-keyring
 pacman --noconfirm -Syu
 pacman --noconfirm -Rdd iptables
-pacman --noconfirm -S qemu-base libvirt iptables-nft dnsmasq dmidecode bridge-utils openbsd-netcat sudo openssh
+pacman --noconfirm -S qemu-base libvirt iptables-nft dnsmasq dmidecode bridge-utils openbsd-netcat sudo openssh screen
 
 systemctl enable libvirtd
 systemctl start libvirtd

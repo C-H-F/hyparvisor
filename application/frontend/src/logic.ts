@@ -184,6 +184,17 @@ export async function getUpdateInformation(): Promise<UpdateInformation> {
 export async function isUpdateAvailable(): Promise<boolean> {
   return (await getUpdateInformation()).packages.length > 0;
 }
+const _updateScreenName = 'hyparvisor.sysupdate';
+export async function isUpdateInProgress(): Promise<boolean> {
+  const response = await runCommand('screen -ls ' + _updateScreenName);
+  return response.stdout.indexOf('hyparvisor') >= 0;
+}
+export async function updateSystem(): Promise<string> {
+  const response = await runCommand(
+    'screen -dmS ' + _updateScreenName + ' sudo pacman --noconfirm -Su'
+  );
+  return response.stdout;
+}
 export async function getBlockDevices(): Promise<BlockDevice[]> {
   const response = await runCommand('lsblk -bfJ');
   let result: any = null;

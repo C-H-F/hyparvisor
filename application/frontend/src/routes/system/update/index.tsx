@@ -1,12 +1,23 @@
 import { component$, useClientEffect$, useStore } from '@builder.io/qwik';
 import { DocumentHead } from '@builder.io/qwik-city';
-import { getUpdateInformation, runCommand, UpdateInformation } from '~/logic';
-type Store = { updateInformation: UpdateInformation | null };
+import {
+  getUpdateInformation,
+  isUpdateInProgress,
+  runCommand,
+  UpdateInformation,
+  updateSystem,
+} from '~/logic';
+type Store = {
+  updateInformation: UpdateInformation | null;
+  updateInProgress: boolean;
+};
 export default component$(() => {
   const state = useStore<Store>({
     updateInformation: null,
+    updateInProgress: false,
   });
   useClientEffect$(async () => {
+    state.updateInProgress = await isUpdateInProgress();
     const updateInformation = await getUpdateInformation();
     state.updateInformation = updateInformation;
   });
@@ -30,12 +41,14 @@ export default component$(() => {
               </p>
               <button
                 on-click$={async () => {
-                  console.log(
-                    (await runCommand('sudo pacman --noconfirm -Su')).stdout
-                  );
+                  state.updateInProgress = true;
+                  console.log(await updateSystem());
                 }}
+                disabled={state.updateInProgress}
               >
-                Install updates now.
+                {state.updateInProgress
+                  ? 'Update is in progress...'
+                  : 'Install updates now.'}
               </button>
               <table>
                 <tr>
