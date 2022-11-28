@@ -1,18 +1,26 @@
 import { component$, useClientEffect$, useStore } from '@builder.io/qwik';
 import { DocumentHead, useLocation } from '@builder.io/qwik-city';
 import { getVirtualMachine } from '~/logic';
+import bytes from 'bytes-iec';
+import {
+  parseVirtualMachineFromXML,
+  VirtualMachine,
+} from '~/models/VirtualMachine';
 
 type Store = {
   xml: string;
+  vm: VirtualMachine | null;
 };
 
 export default component$(() => {
   const location = useLocation();
 
-  const state = useStore<Store>({ xml: '' });
+  const state = useStore<Store>({ xml: '', vm: null });
   const vmId = decodeURIComponent(location.params.vmId);
   useClientEffect$(async () => {
     state.xml = await getVirtualMachine(vmId);
+    state.vm = parseVirtualMachineFromXML(state.xml);
+    console.log('VM:', state.vm);
   });
 
   return (
@@ -72,7 +80,7 @@ export default component$(() => {
             </tr>
             <tr>
               <th>Memory:</th>
-              <td>4GB</td>
+              <td>{bytes.format(state.vm?.memory ?? 0, { mode: 'binary' })}</td>
             </tr>
           </table>
         </section>
