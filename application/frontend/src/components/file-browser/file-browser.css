@@ -1,0 +1,107 @@
+.icon {
+  --icon-size: 32px;
+  .fsEntry {
+    position: relative;
+    user-select: none;
+    --font-size: max(1em, calc(var(--icon-size) * 0.075));
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+    width: var(--icon-size);
+    height: calc(var(--icon-size) + 0.5em + var(--font-size));
+    padding: var(--font-size) calc(2 * var(--font-size));
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    > img {
+      width: var(--icon-size);
+      height: var(--icon-size);
+    }
+    span {
+      display: none;
+    }
+    span.name {
+      font-size: var(--font-size);
+      display: block;
+      text-align: center;
+      cursor: default;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: calc(100% + 3 * var(--font-size));
+    }
+    x&:hover {
+      &::after {
+        z-index: 1;
+        content: '';
+        position: absolute;
+        top: 0px;
+        left: 100%;
+        width: 300px;
+        height: 6em;
+        background-color: rgba(255, 255, 255, 1);
+      }
+      span.size,
+      span.date,
+      span.group,
+      span.user {
+        display: block;
+        position: absolute;
+        left: calc(100% + 5px);
+        width: calc(300px - 1ch);
+        top: 0em;
+        z-index: 2;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        &::before {
+          padding-right: 1ch;
+        }
+      }
+
+      span.size {
+        top: 0em;
+        &::before {
+          content: 'Size:';
+        }
+      }
+      span.date {
+        top: 1.5em;
+        &::before {
+          content: 'Date:';
+        }
+      }
+      span.user {
+        top: 3em;
+        &::before {
+          content: 'Owner:';
+        }
+      }
+      span.group {
+        top: 4.5em;
+        &::before {
+          content: 'Group:';
+        }
+      }
+    }
+  }
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: repeat(10, 32px);
+  .fsEntry {
+    > img {
+      width: 1em;
+      height: 1em;
+      grid-column: 1;
+      grid-row: 1;
+    }
+    > span {
+      display: text;
+      padding: 10px;
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+}
