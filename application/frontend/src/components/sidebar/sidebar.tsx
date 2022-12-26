@@ -50,6 +50,15 @@ export default component$(() => {
             <a href="/system">
               <PreferencesIcon /> System
             </a>
+            <ul>
+              <li>
+                <a href="/system/users">Users</a>
+              </li>
+              <li>Terminal</li>
+              <li>
+                <a href="/system/update">Update</a>
+              </li>
+            </ul>
           </div>
         </nav>
       </div>
