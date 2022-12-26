@@ -4,6 +4,7 @@ import { getVirtualMachine } from '~/logic';
 import bytes from 'bytes-iec';
 import {
   parseVirtualMachineFromXML,
+  serializeVirtualMachineToXML,
   VirtualMachine,
 } from '~/models/VirtualMachine';
 
@@ -20,7 +21,6 @@ export default component$(() => {
   useClientEffect$(async () => {
     state.xml = await getVirtualMachine(vmId);
     state.vm = parseVirtualMachineFromXML(state.xml);
-    console.log('VM:', state.vm);
   });
 
   return (
@@ -76,7 +76,7 @@ export default component$(() => {
           <table>
             <tr>
               <th>CPU:</th>
-              <td>2 vCPUs</td>
+              <td>{state.vm?.vcpuCount} vCPU(s)</td>
             </tr>
             <tr>
               <th>Memory:</th>
