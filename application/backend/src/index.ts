@@ -21,7 +21,6 @@ import type { Config } from './Config';
 
   webServer.on('upgrade', (req, sock, head) => {
     websocketServer.handleUpgrade(req, sock, head, async (websocket) => {
-      console.log('Incoming Connection');
       if (websocket.protocol === 'ssh') {
         await provideSSH(websocket);
       } else {
@@ -68,7 +67,6 @@ import type { Config } from './Config';
             });
           });
         } else if (mode === 'exec') {
-          console.log('EXEC');
           const messageListener = (data: RawData) => {
             webSocket.removeListener('message', messageListener);
             conn.exec(data.toString('utf-8'), (err, stream) => {
