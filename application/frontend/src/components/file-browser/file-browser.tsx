@@ -21,7 +21,7 @@ type Store = {
 export const FileBrowser = component$(
   (props: {
     ls$: PropFunction<LsFunc>;
-    getIcon$: PropFunction<(path: string, file: FsEntry) => string>;
+    getIcon$?: PropFunction<(path: string, file: FsEntry) => string>;
   }) => {
     useStylesScoped$(styles);
     const state = useStore<Store>({
@@ -95,6 +95,7 @@ export const FileBrowser = component$(
                 src="/loading.svg"
                 onLoad$={async (evt) => {
                   const img = evt.target as HTMLImageElement;
+                  if (!props.getIcon$) return;
                   img.src = await props.getIcon$(state.path, entry);
                 }}
               />
