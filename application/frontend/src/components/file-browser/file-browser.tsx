@@ -17,6 +17,7 @@ type Store = {
   fsEntries: FsEntry[];
   back: string[];
   forward: string[];
+  pendingRequests: number;
 };
 export const FileBrowser = component$(
   (props: {
@@ -30,9 +31,12 @@ export const FileBrowser = component$(
       back: [],
       forward: [],
     });
+    const refreshPath$ = $(async (path: string) => {
+      state.fsEntries = await props.ls$(path || '/');
+    });
     useTask$(async ({ track }) => {
       const path = track(() => state.path);
-      state.fsEntries = await props.ls$(path || '/');
+      refreshPath$(path);
     });
 
     useClientEffect$(async () => {
@@ -76,8 +80,20 @@ export const FileBrowser = component$(
           >
             ^
           </button>
-          <button>Refresh</button>
-          <input type="text" value={state.path} />
+          <button
+            onClick$={() => {
+              refreshPath$(state.path);
+            }}
+          >
+            Refresh
+          </button>
+          <input
+            type="text"
+            value={state.path}
+            onBlur$={(evt) => {
+              pushPath$(evt.target.value);
+            }}
+          />
         </div>
         <div class="icon">
           {state.fsEntries.map((entry, index) => (
