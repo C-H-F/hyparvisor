@@ -1,3 +1,7 @@
+.fetching {
+  cursor: wait;
+}
+
 .icon {
   --icon-size: 32px;
   .fsEntry {

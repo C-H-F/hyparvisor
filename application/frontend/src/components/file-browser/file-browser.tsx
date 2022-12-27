@@ -30,9 +30,12 @@ export const FileBrowser = component$(
       fsEntries: [],
       back: [],
       forward: [],
+      pendingRequests: 0,
     });
     const refreshPath$ = $(async (path: string) => {
+      state.pendingRequests++;
       state.fsEntries = await props.ls$(path || '/');
+      state.pendingRequests--;
     });
     useTask$(async ({ track }) => {
       const path = track(() => state.path);
@@ -95,7 +98,7 @@ export const FileBrowser = component$(
             }}
           />
         </div>
-        <div class="icon">
+        <div class={['icon', state.pendingRequests ? 'fetching' : 'ready']}>
           {state.fsEntries.map((entry, index) => (
             <div
               key={index}
