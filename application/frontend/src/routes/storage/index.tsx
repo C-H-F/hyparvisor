@@ -35,11 +35,13 @@ export default component$(() => {
         group: cols[4],
         size: +cols[5],
         date,
+        link: '',
       };
       if (entry.name == '.' || entry.name == '..') continue;
       const idx = entry.name.indexOf(' -> ');
       if (idx >= 0) {
         entry.name = entry.name.substring(0, idx);
+        entry.link = entry.name.substring(idx + ' -> '.length);
       }
       result.push(entry);
     }

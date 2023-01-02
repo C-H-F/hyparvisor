@@ -6,4 +6,5 @@ export type FsEntry = {
   group: string;
   size: number;
   date: string;
+  link: string;
 };
