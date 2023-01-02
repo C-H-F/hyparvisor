@@ -19,6 +19,9 @@
     }
   }
 }
+.fsEntry.selected {
+  box-shadow: 0 0 2px 0px black;
+}
 
 .icon {
   --icon-size: 32px;

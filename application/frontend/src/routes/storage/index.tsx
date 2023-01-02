@@ -1,6 +1,9 @@
 import { $, component$, useClientEffect$, useStore } from '@builder.io/qwik';
 import { DocumentHead } from '@builder.io/qwik-city';
-import { FileBrowser } from '~/components/file-browser/file-browser';
+import {
+  FileBrowser,
+  normalizeAbsolutePath,
+} from '~/components/file-browser/file-browser';
 import { getBlockDevices, runCommand } from '~/logic';
 import { BlockDevice } from '~/models/BlockDevice';
 import { FsEntry } from '~/components/file-browser/fs-entry';
@@ -48,7 +51,24 @@ export default component$(() => {
     return result;
   });
   const mkdir$ = $(async (path: string) => {
-    await runCommand('mkdir ' + JSON.stringify(path));
+    const ans = await runCommand(
+      'mkdir ' + JSON.stringify(normalizeAbsolutePath(path))
+    );
+    return ans.stdout + ans.stderr;
+  });
+  const rm$ = $(async (path: string[]) => {
+    if (path.length == 0) return '';
+    const message =
+      path.length == 1
+        ? 'Are you sure you want to delte this file?'
+        : 'Are you sure you want to delete these ' + path.length + ' files?';
+    if (!confirm(message)) return '';
+    const args = path
+      .map((x) => JSON.stringify(normalizeAbsolutePath(x)))
+      .join(' ');
+    const ans = await runCommand('rm -R ' + args);
+    const msg = ans.stdout + ans.stderr;
+    return msg;
   });
   return (
     <>
@@ -56,6 +76,7 @@ export default component$(() => {
       <FileBrowser
         ls$={ls$}
         mkdir$={mkdir$}
+        rm$={rm$}
         getIcon$={(path: string, entry: FsEntry): string => {
           if (entry.permissions.startsWith('d')) return '/directory.svg';
           return '/file.svg';

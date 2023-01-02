@@ -20,11 +20,33 @@ type Store = {
   forward: string[];
   pendingRequests: number;
   signal: boolean;
+  selection: string[];
+};
+
+export const normalizeAbsolutePath = (path: string) => {
+  const parts = path.split('/');
+  const result: string[] = [];
+  for (const part of parts) {
+    if (part == '') continue;
+    if (part == '.') continue;
+    if (part == '..') {
+      result.pop();
+      continue;
+    }
+    result.push(part);
+  }
+  return '/' + result.join('/');
+};
+export const joinPath = (...args: string[]) => {
+  const tmp = args.join('/');
+  if (tmp.startsWith('/')) normalizeAbsolutePath(tmp);
+  return tmp; //Relative path
 };
 export const FileBrowser = component$(
   (props: {
     ls$: PropFunction<LsFunc>;
-    mkdir$?: PropFunction<(dir: string) => void>;
+    mkdir$?: PropFunction<(dir: string) => string | void>;
+    rm$?: PropFunction<(dir: string[]) => string | void>;
     getIcon$?: PropFunction<(path: string, file: FsEntry) => string>;
   }) => {
     useStylesScoped$(styles);
@@ -36,6 +58,7 @@ export const FileBrowser = component$(
       forward: [],
       pendingRequests: 0,
       signal: false,
+      selection: [],
     });
     const refreshPath$ = $(async (path: string | null = null) => {
       state.pendingRequests++;
@@ -133,10 +156,9 @@ export const FileBrowser = component$(
           }}
         >
           <div class="contextmenu">
-            <div>
+            <div style={{ display: props.mkdir$ ? '' : 'none' }}>
               <a
                 href="#"
-                style={{ display: props.mkdir$ ? '' : 'none' }}
                 preventdefault:click
                 onClick$={() => {
                   console.log('Creating new Folder...');
@@ -160,6 +182,26 @@ export const FileBrowser = component$(
                 New Folder
               </a>
             </div>
+            <div
+              style={{
+                display: props.rm$ && state.selection.length ? '' : 'none',
+              }}
+            >
+              <a
+                href="#"
+                preventdefault:click
+                onClick$={async () => {
+                  if (!props.rm$) return;
+                  const error = await props.rm$(
+                    state.selection.map((x) => joinPath(state.path, x))
+                  );
+                  if (error) console.error(error); //TODO: Show toast instead.
+                  await refreshPath$();
+                }}
+              >
+                Delete
+              </a>
+            </div>
           </div>
           {state.fsEntries.map((entry, index) => (
             <div
@@ -170,7 +212,28 @@ export const FileBrowser = component$(
                 path += entry.name;
                 pushPath$(path);
               }}
-              class="fsEntry"
+              onPointerUp$={(evt) => {
+                if (evt.button === 2) {
+                  if (state.selection.indexOf(entry.name) >= 0) return;
+                }
+                const newSelection: string[] = [];
+                let add = true;
+                if (evt.ctrlKey) {
+                  newSelection.push(...state.selection);
+                  const pos = newSelection.indexOf(entry.name);
+                  if (pos >= 0) newSelection.splice(pos, 1);
+                  else newSelection.push(entry.name);
+                } else if (evt.shiftKey) {
+                  //TODO: Range Select
+                } else {
+                  newSelection.push(entry.name);
+                }
+                state.selection = newSelection;
+              }}
+              class={[
+                'fsEntry',
+                state.selection.indexOf(entry.name) >= 0 ? 'selected' : '',
+              ]}
             >
               <img
                 src="/loading.svg"
@@ -192,7 +255,10 @@ export const FileBrowser = component$(
                     try {
                       if (evt.key === 'Enter') {
                         if (entry.action === 'mkdir' && props.mkdir$) {
-                          await props.mkdir$(state.path + '/' + src.value);
+                          const error = await props.mkdir$(
+                            joinPath(state.path, src.value)
+                          );
+                          if (error) console.error(error); //TODO: Show toast instead.
                           return;
                         }
                         console.warn('Unknown action', entry.action);
