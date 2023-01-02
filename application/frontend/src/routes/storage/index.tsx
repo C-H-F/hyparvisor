@@ -22,18 +22,26 @@ export default component$(() => {
     for (let i = 1; i < lines.length; i++) {
       //Ignore first line (Total)
       const line = lines[i];
-      const cols = line.split(/\s+/g, 9);
-      if (cols.length != 9) continue;
-      let date = cols[5] + 'T' + cols[6] + cols[7];
-      result.push({
-        name: cols[8],
-        permissions: cols[0],
-        type: +cols[1],
-        user: cols[2],
-        group: cols[3],
-        size: +cols[4],
+      const regex =
+        /(\S*)\s+(\S*)\s+(\S*)\s+(\S*)\s+(\S*)\s+(\S*)\s+(\S*)\s+(\S*)\s+(.*)/g;
+      const cols = regex.exec(line);
+      if (!cols || cols.length != 10) continue;
+      let date = cols[6] + 'T' + cols[7] + cols[8];
+      const entry: FsEntry = {
+        name: cols[9],
+        permissions: cols[1],
+        type: +cols[2],
+        user: cols[3],
+        group: cols[4],
+        size: +cols[5],
         date,
-      });
+      };
+      if (entry.name == '.' || entry.name == '..') continue;
+      const idx = entry.name.indexOf(' -> ');
+      if (idx >= 0) {
+        entry.name = entry.name.substring(0, idx);
+      }
+      result.push(entry);
     }
     return result;
   });
