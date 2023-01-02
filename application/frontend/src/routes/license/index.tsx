@@ -5,10 +5,20 @@ export default component$(() => {
   return (
     <>
       <h1>License</h1>
-      <p>Icons used: Adwaita from "GNOME Project". LGPL v3</p>
       <p>
-        Server Image: panumas nikhomkhai @ Pexels:
-        https://www.pexels.com/de-de/foto/nahaufnahme-foto-von-mining-rig-1148820/
+        Icons used: Adwaita from "GNOME Project". LGPL v3 <br />
+        <a href="https://github.com/GNOME/adwaita-icon-theme" target="_blank">
+          https://github.com/GNOME/adwaita-icon-theme
+        </a>
+      </p>
+      <p>
+        Server Image: panumas nikhomkhai @ Pexels: <br />
+        <a
+          href="https://www.pexels.com/de-de/foto/nahaufnahme-foto-von-mining-rig-1148820/"
+          target="_blank"
+        >
+          https://www.pexels.com/de-de/foto/nahaufnahme-foto-von-mining-rig-1148820/
+        </a>
       </p>
     </>
   );
