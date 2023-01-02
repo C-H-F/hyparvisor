@@ -123,8 +123,8 @@
 
 .detail {
   display: grid;
-  grid-template-columns: repeat(10, 32px);
   .fsEntry {
+    user-select: none;
     > img {
       width: 1em;
       height: 1em;

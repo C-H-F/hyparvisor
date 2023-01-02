@@ -9,6 +9,7 @@ import {
   useTask$,
   useTaskQrl,
 } from '@builder.io/qwik';
+import bytes from 'bytes-iec';
 import { FsEntry } from './fs-entry';
 import styles from './file-browser.css?inline';
 import { GoNextIcon } from '~/components/icons/goNext';
@@ -282,7 +283,9 @@ export const FileBrowser = component$(
               <span class="type">{entry.type}</span>
               <span class="user">{entry.user}</span>
               <span class="group">{entry.group}</span>
-              <span class="size">{entry.size}</span>
+              <span class="size">
+                {bytes.format(entry.size, { mode: 'binary' })}
+              </span>
               <span class="date">{entry.date}</span>
             </div>
           ))}
