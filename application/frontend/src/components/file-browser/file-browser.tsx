@@ -11,7 +11,10 @@ import {
 } from '@builder.io/qwik';
 import { FsEntry } from './fs-entry';
 import styles from './file-browser.css?inline';
-import { LoadingIcon } from '~/components/icons/loading';
+import { GoNextIcon } from '~/components/icons/goNext';
+import { GoPreviousIcon } from '~/components/icons/goPrevious';
+import { GoUpIcon } from '~/components/icons/goUp';
+import { RefreshIcon } from '~/components/icons/refresh';
 type LsFunc = (path: string) => FsEntry[];
 type Store = {
   path: string;
@@ -96,7 +99,7 @@ export const FileBrowser = component$(
               state.path = state.back.pop() || '';
             }}
           >
-            &lt;
+            <GoPreviousIcon />
           </button>
           <button
             disabled={state.forward.length == 0}
@@ -105,7 +108,7 @@ export const FileBrowser = component$(
               state.path = state.forward.pop() || '';
             }}
           >
-            &gt;
+            <GoNextIcon />
           </button>
           <button
             onClick$={() => {
@@ -117,14 +120,14 @@ export const FileBrowser = component$(
               pushPath$(path.substring(0, idx));
             }}
           >
-            ^
+            <GoUpIcon />
           </button>
           <button
             onClick$={() => {
               refreshPath$();
             }}
           >
-            Refresh
+            <RefreshIcon />
           </button>
           <input
             type="text"
