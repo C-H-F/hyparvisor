@@ -1,6 +1,11 @@
 import { component$, useClientEffect$, useStore } from '@builder.io/qwik';
 import { DocumentHead, useLocation } from '@builder.io/qwik-city';
 import { getVirtualMachine } from '~/logic';
+import { ShutdownIcon } from '~/components/icons/shutdown';
+import { PauseIcon } from '~/components/icons/pause';
+import { RestartIcon } from '~/components/icons/restart';
+import { EditIcon } from '~/components/icons/edit';
+import { ComputerIcon } from '~/components/icons/computer';
 import bytes from 'bytes-iec';
 import {
   parseVirtualMachineFromXML,
@@ -27,11 +32,22 @@ export default component$(() => {
     <>
       <pre>{state.xml}</pre>
       <div>
-        <button>Console</button>
-        <button>Shutdown</button>
-        <button>Pause</button>
-        <button>Restart</button>
-        <button>Edit</button>
+        <button>
+          <ComputerIcon /> Console
+        </button>
+        <button>
+          <ShutdownIcon /> Shutdown
+        </button>
+        <button>
+          <PauseIcon /> Pause
+        </button>
+        <button>
+          <RestartIcon /> Restart
+        </button>
+        <button>
+          <EditIcon />
+          Edit
+        </button>
       </div>
       <div style="float: right;">
         <section>
