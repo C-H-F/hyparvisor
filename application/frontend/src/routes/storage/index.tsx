@@ -47,11 +47,15 @@ export default component$(() => {
     }
     return result;
   });
+  const mkdir$ = $(async (path: string) => {
+    await runCommand('mkdir ' + JSON.stringify(path));
+  });
   return (
     <>
       <p>Hello from Storage!</p>
       <FileBrowser
         ls$={ls$}
+        mkdir$={mkdir$}
         getIcon$={(path: string, entry: FsEntry): string => {
           if (entry.permissions.startsWith('d')) return '/directory.svg';
           return '/file.svg';

@@ -1,6 +1,24 @@
 .fetching {
   cursor: wait;
 }
+.browser {
+  padding-top: 1em;
+  padding-bottom: 3em;
+}
+.contextmenu {
+  background-color: orange;
+  position: absolute;
+  z-index: 2;
+  box-shadow: 1px 1px 3px -1px black;
+  display: none;
+  > div {
+    cursor: pointer;
+    padding: 0.25em 0.75em;
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
 
 .icon {
   --icon-size: 32px;
@@ -33,7 +51,16 @@
       cursor: default;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
       width: calc(100% + 3 * var(--font-size));
+    }
+    input[type='text'].name {
+      font-size: var(--font-size);
+      display: block;
+      text-align: center;
+      width: calc(100% + 3 * var(--font-size));
+      background: none;
+      border: none;
     }
     x&:hover {
       &::after {
