@@ -51,6 +51,7 @@ export const FileBrowser = component$(
     ls$: PropFunction<LsFunc>;
     mkdir$?: PropFunction<(dir: string) => string | void>;
     rm$?: PropFunction<(dir: string[]) => string | void>;
+    download$?: PropFunction<(url: string, dest: string) => string | void>;
     getIcon$?: PropFunction<(path: string, file: FsEntry) => string>;
   }) => {
     useStylesScoped$(styles);
@@ -185,6 +186,29 @@ export const FileBrowser = component$(
               >
                 New Folder
               </a>
+            </div>
+            <div>
+              New File
+              <div>
+                <div>
+                  <a
+                    href="#"
+                    preventdefault:click
+                    onClick$={async () => {
+                      if (!props.download$) return;
+                      const url = prompt('Download URL:');
+                      if (!url) return;
+                      await props.download$(
+                        url,
+                        normalizeAbsolutePath(state.path)
+                      );
+                      refreshPath$();
+                    }}
+                  >
+                    Download from URL
+                  </a>
+                </div>
+              </div>
             </div>
             <div
               style={{

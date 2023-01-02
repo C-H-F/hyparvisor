@@ -70,6 +70,14 @@ export default component$(() => {
     const msg = ans.stdout + ans.stderr;
     return msg;
   });
+  const download$ = $(async (url: string, dest: string) => {
+    const ans = await runCommand(
+      'screen -dmS download wget -P ' +
+        JSON.stringify(dest) +
+        ' ' +
+        JSON.stringify(url)
+    );
+  });
   return (
     <>
       <p>Hello from Storage!</p>
