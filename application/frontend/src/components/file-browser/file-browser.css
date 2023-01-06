@@ -122,9 +122,13 @@
 }
 
 .detail {
-  display: grid;
+  display: table;
   .fsEntry {
+    display: table-row;
     user-select: none;
+    > * {
+      display: table-cell;
+    }
     > img {
       width: 1em;
       height: 1em;

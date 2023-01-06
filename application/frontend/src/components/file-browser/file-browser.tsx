@@ -16,6 +16,8 @@ import { GoNextIcon } from '~/components/icons/goNext';
 import { GoPreviousIcon } from '~/components/icons/goPrevious';
 import { GoUpIcon } from '~/components/icons/goUp';
 import { RefreshIcon } from '~/components/icons/refresh';
+import { ViewIconIcon } from '../icons/viewIcon';
+import { ViewDetailIcon } from '../icons/viewDetail';
 type LsFunc = (path: string) => FsEntry[];
 type Store = {
   path: string;
@@ -25,6 +27,7 @@ type Store = {
   pendingRequests: number;
   signal: boolean;
   selection: string[];
+  view: 'icon' | 'detail';
 };
 
 export const normalizeAbsolutePath = (path: string) => {
@@ -64,6 +67,7 @@ export const FileBrowser = component$(
       pendingRequests: 0,
       signal: false,
       selection: [],
+      view: 'icon',
     });
     const refreshPath$ = $(async (path: string | null = null) => {
       state.pendingRequests++;
@@ -138,11 +142,35 @@ export const FileBrowser = component$(
               pushPath$(evt.target.value);
             }}
           />
+          <label>
+            <input
+              type="radio"
+              name="view"
+              checked={state.view == 'icon'}
+              onChange$={(evt) => {
+                if (evt.target.checked) state.view = 'icon';
+              }}
+            />
+            <ViewIconIcon />
+            <span>Icons</span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="view"
+              checked={state.view == 'detail'}
+              onChange$={(evt) => {
+                if (evt.target.checked) state.view = 'detail';
+              }}
+            />
+            <ViewDetailIcon />
+            <span>Details</span>
+          </label>
         </div>
         <div
           class={[
             'browser',
-            'icon',
+            state.view,
             state.pendingRequests ? 'fetching' : 'ready',
           ]}
           preventdefault:contextmenu
