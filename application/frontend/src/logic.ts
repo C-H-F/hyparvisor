@@ -308,6 +308,26 @@ export async function getVirtualMachine(name: string): Promise<string> {
   );
   return response.stdout;
 }
+export async function startVirtualMachine(name: string): Promise<string> {
+  const connectionString = 'qemu:///system';
+  const response = await runCommand(
+    'virsh -c ' + connectionString + ' start ' + JSON.stringify(name)
+  );
+  return response.stderr;
+}
+export async function shutdownVirtualMachine(
+  name: string,
+  force: boolean
+): Promise<string> {
+  const connectionString = 'qemu:///system';
+  const response = await runCommand(
+    'virsh -c ' +
+      connectionString +
+      (force ? ' destroy ' : ' shutdown ') +
+      JSON.stringify(name)
+  );
+  return response.stderr;
+}
 
 export function getCredentials(): Credentials | null {
   return state;
