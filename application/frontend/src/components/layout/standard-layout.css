@@ -1,0 +1,28 @@
+:root {
+  --nav-size: 250px;
+}
+
+.jumplabel {
+  color: pink;
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  visibility: invisible;
+}
+.jumplabel:focus {
+  position: fixed;
+  top: 1em;
+  left: 50%;
+  width: auto;
+  height: auto;
+  visibility: visible;
+  outline: none;
+  background-color: white;
+  color: black;
+  padding: 1em 2em;
+  border: 1px solid gray;
+  box-shadow: 1px 1px 10px 0px rgba(0, 0, 0, 0.5);
+}

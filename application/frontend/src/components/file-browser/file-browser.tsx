@@ -1,348 +1,467 @@
-import {
-  $,
-  component$,
-  PropFunction,
-  useClientEffect$,
-  useSignal,
-  useStore,
-  useStylesScoped$,
-  useTask$,
-  useTaskQrl,
-} from '@builder.io/qwik';
+import { useEffect, useState } from 'react';
+//import { FsEntry } from '../../lib/fs-entry';
 import bytes from 'bytes-iec';
-import { FsEntry } from './fs-entry';
-import styles from './file-browser.css?inline';
-import { GoNextIcon } from '~/components/icons/goNext';
-import { GoPreviousIcon } from '~/components/icons/goPrevious';
-import { GoUpIcon } from '~/components/icons/goUp';
-import { RefreshIcon } from '~/components/icons/refresh';
-import { ViewIconIcon } from '../icons/viewIcon';
-import { ViewDetailIcon } from '../icons/viewDetail';
-type LsFunc = (path: string) => FsEntry[];
-type Store = {
-  path: string;
-  fsEntries: (FsEntry & { action?: 'rename' | 'mkdir' })[];
-  back: string[];
-  forward: string[];
-  pendingRequests: number;
-  signal: boolean;
-  selection: string[];
-  view: 'icon' | 'detail';
+import './file-browser.css';
+import { range } from '@/lib/utils';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  DownloadCloud,
+  File,
+  Folder,
+  LayoutGrid,
+  LayoutList,
+  RefreshCw,
+} from 'lucide-react';
+import { Input } from '../shadcn/ui/input';
+import { Button } from '../shadcn/ui/button';
+import { Toggle } from '../shadcn/ui/toggle';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from '../shadcn/ui/context-menu';
+import { Progress } from '../shadcn/ui/progress';
+
+type FsType = 'dir' | 'file';
+export type FsEntry = {
+  type: string;
+  name: string;
+  user: number;
+  group: number;
+  size: number;
+  dir: string;
+  dateAccess: string;
+  dateModify: string;
+  dateChange: string;
+  dateBirth: string;
+  permissions: number;
+  targetSize?: number;
 };
 
-export const normalizeAbsolutePath = (path: string) => {
-  const parts = path.split('/');
-  const result: string[] = [];
-  for (const part of parts) {
-    if (part == '') continue;
-    if (part == '.') continue;
-    if (part == '..') {
-      result.pop();
-      continue;
-    }
-    result.push(part);
+type FsDummy = {
+  type: string;
+  name: string;
+  dir: string;
+  apply: (name: string) => Promise<void>;
+} & Partial<FsEntry>;
+
+type LsFunc = (path: string) => Promise<FsEntry[]>;
+type RmFunc = (path: string) => Promise<void>;
+type MkdirFunc = (path: string) => Promise<void>;
+type MvFunc = (src: string, dst: string) => Promise<void>;
+type TouchFunc = (path: string) => Promise<void>;
+type DownloadFunc = (url: string, dst: string) => void;
+type Layout = 'icon' | 'detail';
+
+function typeCompare(a: string, b: string) {
+  if (a == 'dir') return -1;
+  if (a == b) return 0;
+  return 1;
+}
+
+export default function FileBrowser(props: {
+  filter?: string;
+  defaultPath?: string;
+  ls: LsFunc;
+  rm?: RmFunc;
+  mv?: MvFunc;
+  mkdir?: MkdirFunc;
+  touch?: TouchFunc;
+  download?: DownloadFunc;
+  onNavigate?: (path: string) => void;
+  onSelect?: (path: FsEntry[]) => void;
+  onOpen?: (path: FsEntry) => void;
+}) {
+  const [path, setPath] = useState(props.defaultPath ?? '/');
+  const [back, setBack] = useState<string[]>([]);
+  const [forward, setForward] = useState<string[]>([]);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [layout, setLayout] = useState<Layout>('icon');
+  const [fsEntries, setFsEntries] = useState<FsEntry[]>([]);
+  const [fsDummy, setFsDummy] = useState<FsDummy | null>(null);
+  const [selection, setSelection] = useState<number[]>([]);
+  const pushPath = function (newPath: string) {
+    if (newPath == '') newPath = '/';
+    setBack([...back, path]);
+    setForward([]);
+    setPath(newPath);
+    setFsDummy(null);
+  };
+  const refreshPath = async function () {
+    const entries = await props.ls(path);
+    entries
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => typeCompare(a.type, b.type));
+    setFsEntries(entries ?? []);
+    setFsDummy(null);
+  };
+  const getFsTypeName = function (entry: FsEntry | FsDummy) {
+    if (entry.type === 'dir') return 'directory';
+    return 'file';
+  };
+  const getFsTypeIcon = function (entry: FsEntry | FsDummy) {
+    const type = getFsTypeName(entry);
+    if (type == 'directory') return <Folder />;
+    return <File />;
+  };
+  useEffect(() => {
+    refreshPath();
+    if (props.onNavigate) props.onNavigate(path);
+  }, [path]);
+  useEffect(() => {
+    if (!props.onSelect) return;
+    const max = selection.reduce((x, y) => (x > y ? x : y), 0);
+    if (fsEntries.length <= max) return;
+    props.onSelect(selection.map((x) => fsEntries[x]));
+  }, [selection, path, fsEntries]);
+
+  async function focusInputRef(input: HTMLInputElement) {
+    if (!input || input === document.activeElement) return;
+    input.select();
+    input.focus();
   }
-  return '/' + result.join('/');
-};
-export const joinPath = (...args: string[]) => {
-  const tmp = args.join('/');
-  if (tmp.startsWith('/')) normalizeAbsolutePath(tmp);
-  return tmp; //Relative path
-};
-export const FileBrowser = component$(
-  (props: {
-    ls$: PropFunction<LsFunc>;
-    mkdir$?: PropFunction<(dir: string) => string | void>;
-    rm$?: PropFunction<(dir: string[]) => string | void>;
-    download$?: PropFunction<(url: string, dest: string) => string | void>;
-    getIcon$?: PropFunction<(path: string, file: FsEntry) => string>;
-  }) => {
-    useStylesScoped$(styles);
-    const nameInput = useSignal<HTMLInputElement>();
-    const state = useStore<Store>({
-      path: '',
-      fsEntries: [],
-      back: [],
-      forward: [],
-      pendingRequests: 0,
-      signal: false,
-      selection: [],
-      view: 'icon',
+
+  function makeEntryImpl(type: FsType, apply: (name: string) => Promise<void>) {
+    let name = type == 'dir' ? 'New Folder' : 'New File';
+    for (let i = 1; ; i++) {
+      const currName = name + (i == 1 ? '' : ' ' + i);
+      if (fsEntries.findIndex((x) => x.name == currName) >= 0) continue;
+      name = currName;
+      break;
+    }
+    setFsDummy({
+      name,
+      type,
+      dir: path,
+      apply: async (...args) => {
+        await apply(...args);
+        setFsDummy(null);
+        await refreshPath();
+      },
     });
-    const refreshPath$ = $(async (path: string | null = null) => {
-      state.pendingRequests++;
-      state.fsEntries = await props.ls$(path || state.path || '/');
-      state.pendingRequests--;
-    });
-    useTask$(async ({ track }) => {
-      const path = track(() => state.path);
-      refreshPath$(path);
-    });
-    useClientEffect$(({ track }) => {
-      track(() => state.signal);
-      if (!state.signal) return;
-      const input = nameInput.value;
-      if (!input) return;
-      input.select();
-      input.focus();
-      state.signal = false;
-    });
-    useClientEffect$(async () => {
-      state.path = '/';
-    });
-    const pushPath$ = $((path: string) => {
-      state.back.push(state.path);
-      state.forward = [];
-      state.path = path;
-    });
-    return (
-      <>
-        <div class="menu">
-          <button
-            disabled={state.back.length == 0}
-            onClick$={() => {
-              state.forward.push(state.path);
-              state.path = state.back.pop() || '';
-            }}
-          >
-            <GoPreviousIcon />
-          </button>
-          <button
-            disabled={state.forward.length == 0}
-            onClick$={() => {
-              state.back.push(state.path);
-              state.path = state.forward.pop() || '';
-            }}
-          >
-            <GoNextIcon />
-          </button>
-          <button
-            onClick$={() => {
-              let path = state.path;
-              while (path.endsWith('/'))
-                path = path.substring(0, path.length - 1);
-              const idx = path.lastIndexOf('/');
-              if (idx < 0) return;
-              pushPath$(path.substring(0, idx));
-            }}
-          >
-            <GoUpIcon />
-          </button>
-          <button
-            onClick$={() => {
-              refreshPath$();
-            }}
-          >
-            <RefreshIcon />
-          </button>
-          <input
-            type="text"
-            value={state.path}
-            onBlur$={(evt) => {
-              pushPath$(evt.target.value);
-            }}
-          />
-          <label>
-            <input
-              type="radio"
-              name="view"
-              checked={state.view == 'icon'}
-              onChange$={(evt) => {
-                if (evt.target.checked) state.view = 'icon';
-              }}
-            />
-            <ViewIconIcon />
-            <span>Icons</span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="view"
-              checked={state.view == 'detail'}
-              onChange$={(evt) => {
-                if (evt.target.checked) state.view = 'detail';
-              }}
-            />
-            <ViewDetailIcon />
-            <span>Details</span>
-          </label>
-        </div>
-        <div
-          class={[
-            'browser',
-            state.view,
-            state.pendingRequests ? 'fetching' : 'ready',
-          ]}
-          preventdefault:contextmenu
-          onContextMenu$={(evt) => {
-            const contextMenu =
-              document.querySelector<HTMLDivElement>('.contextmenu');
-            if (!contextMenu) return;
-            const clear = (evt: MouseEvent) => {
-              window.removeEventListener('mouseup', clear);
-              contextMenu.style.display = 'none';
-            };
-            window.addEventListener('mouseup', clear);
-            contextMenu.style.top = evt.pageY + 'px';
-            contextMenu.style.left = evt.pageX + 'px';
-            contextMenu.style.display = 'block';
-          }}
-        >
-          <div class="contextmenu">
-            <div style={{ display: props.mkdir$ ? '' : 'none' }}>
-              <a
-                href="#"
-                preventdefault:click
-                onClick$={() => {
-                  console.log('Creating new Folder...');
-                  state.fsEntries = [
-                    ...state.fsEntries,
-                    {
-                      name: 'New Folder',
-                      permissions: 'd---------',
-                      type: 0,
-                      user: '~',
-                      group: '~',
-                      size: 0,
-                      date: 'TODO',
-                      action: 'mkdir',
-                      link: '',
-                    },
-                  ];
-                  state.signal = true;
-                }}
-              >
-                New Folder
-              </a>
-            </div>
-            <div>
-              New File
-              <div>
-                <div>
-                  <a
-                    href="#"
-                    preventdefault:click
-                    onClick$={async () => {
-                      if (!props.download$) return;
-                      const url = prompt('Download URL:');
-                      if (!url) return;
-                      await props.download$(
-                        url,
-                        normalizeAbsolutePath(state.path)
-                      );
-                      refreshPath$();
-                    }}
-                  >
-                    Download from URL
-                  </a>
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                display: props.rm$ && state.selection.length ? '' : 'none',
-              }}
-            >
-              <a
-                href="#"
-                preventdefault:click
-                onClick$={async () => {
-                  if (!props.rm$) return;
-                  const error = await props.rm$(
-                    state.selection.map((x) => joinPath(state.path, x))
-                  );
-                  if (error) console.error(error); //TODO: Show toast instead.
-                  await refreshPath$();
-                }}
-              >
-                Delete
-              </a>
-            </div>
-          </div>
-          {state.fsEntries.map((entry, index) => (
-            <div
-              key={index}
-              onDblClick$={async () => {
-                let path = state.path;
-                if (!path.endsWith('/')) path += '/';
-                path += entry.name;
-                pushPath$(path);
-              }}
-              onPointerUp$={(evt) => {
-                if (evt.button === 2) {
-                  if (state.selection.indexOf(entry.name) >= 0) return;
-                }
-                const newSelection: string[] = [];
-                let add = true;
-                if (evt.ctrlKey) {
-                  newSelection.push(...state.selection);
-                  const pos = newSelection.indexOf(entry.name);
-                  if (pos >= 0) newSelection.splice(pos, 1);
-                  else newSelection.push(entry.name);
-                } else if (evt.shiftKey) {
-                  //TODO: Range Select
-                } else {
-                  newSelection.push(entry.name);
-                }
-                state.selection = newSelection;
-              }}
-              class={[
-                'fsEntry',
-                state.selection.indexOf(entry.name) >= 0 ? 'selected' : '',
-              ]}
-            >
-              <img
-                src="/loading.svg"
-                onLoad$={async (evt) => {
-                  const img = evt.target as HTMLImageElement;
-                  if (!props.getIcon$) return;
-                  img.src = await props.getIcon$(state.path, entry);
-                }}
-              />
-              {['mkdir', 'rename'].indexOf(entry.action || '') >= 0 ? (
-                <input
-                  class="name"
-                  type="text"
-                  value={entry.name}
-                  ref={nameInput}
-                  onKeyDown$={async (evt) => {
-                    const src = evt.target as HTMLInputElement;
-                    let refresh = true;
-                    try {
-                      if (evt.key === 'Enter') {
-                        if (entry.action === 'mkdir' && props.mkdir$) {
-                          const error = await props.mkdir$(
-                            joinPath(state.path, src.value)
-                          );
-                          if (error) console.error(error); //TODO: Show toast instead.
-                          return;
-                        }
-                        console.warn('Unknown action', entry.action);
-                      }
-                      if (evt.key === 'Escape') {
-                        return;
-                      }
-                      refresh = false;
-                    } finally {
-                      if (refresh) refreshPath$();
-                    }
-                  }}
-                />
-              ) : (
-                <span class="name">{entry.name}</span>
-              )}
-              <span class="permissions">{entry.permissions}</span>
-              <span class="type">{entry.type}</span>
-              <span class="user">{entry.user}</span>
-              <span class="group">{entry.group}</span>
-              <span class="size">
-                {bytes.format(entry.size, { mode: 'binary' })}
-              </span>
-              <span class="date">{entry.date}</span>
-            </div>
-          ))}
-        </div>
-      </>
+  }
+  function makeEntry(type: FsType) {
+    return new Promise<string>((cb) =>
+      makeEntryImpl(type, async (name) => cb(name))
     );
   }
-);
+
+  return (
+    <div className="fileBrowser flex max-h-[100%] flex-col">
+      <div className="flex flex-row items-center gap-2">
+        <Button
+          disabled={back.length == 0}
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setForward([...forward, path]);
+            setPath(back.pop() || '');
+            setBack([...back]);
+          }}
+        >
+          <ArrowLeft />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={forward.length == 0}
+          onClick={() => {
+            setBack([...back, path]);
+            setPath(forward.pop() || '');
+            setForward([...forward]);
+          }}
+        >
+          <ArrowRight />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            let tmpPath = path;
+            while (tmpPath.endsWith('/'))
+              tmpPath = tmpPath.substring(0, tmpPath.length - 1);
+            const idx = tmpPath.lastIndexOf('/');
+            if (idx < 0) return;
+            pushPath(tmpPath.substring(0, idx));
+          }}
+        >
+          <ArrowUp />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            refreshPath();
+          }}
+        >
+          <RefreshCw />
+        </Button>
+        <Input
+          type="text"
+          value={path}
+          onChange={(evt) => {
+            pushPath(evt.target.value);
+          }}
+        />
+
+        <Toggle
+          variant="outline"
+          aria-label="Toggle Icons"
+          pressed={layout == 'icon'}
+          onPressedChange={(val) => {
+            if (val) setLayout('icon');
+          }}
+        >
+          <LayoutGrid className="mr-2" />
+          Icons
+        </Toggle>
+        <Toggle
+          variant="outline"
+          aria-label="Toggle Details"
+          pressed={layout == 'detail'}
+          onPressedChange={(val) => {
+            if (val) setLayout('detail');
+          }}
+        >
+          <LayoutList className="mr-2" />
+          Details
+        </Toggle>
+      </div>
+      <ContextMenu key="contextMenu/root">
+        <ContextMenuTrigger className="flex-shrink overflow-auto">
+          <div
+            onClick={() => {
+              setSelection([]);
+            }}
+            className={[
+              'browser',
+              layout,
+              pendingRequests ? 'fetching' : 'ready',
+              'bg-card',
+              'mt-2',
+              'p-1',
+            ].join(' ')}
+          >
+            {fsEntries
+              .filter(
+                (x) =>
+                  new RegExp(props.filter ?? '').test(x.name) ||
+                  x.type === 'dir'
+              )
+              .map((entry, index) => (
+                <ContextMenu key={'contextMenu/' + index}>
+                  <ContextMenuTrigger>
+                    <div
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (e.ctrlKey) {
+                          setSelection([...selection, index]);
+                          return;
+                        }
+                        if (e.shiftKey && selection.length > 0) {
+                          const mainSelection = selection[selection.length - 1];
+                          const elements = range(mainSelection, index);
+                          setSelection([...elements, index, mainSelection]);
+                          return;
+                        }
+                        setSelection([index]);
+                      }}
+                      onDoubleClick={() => {
+                        if (entry.type !== 'dir') {
+                          if (props.onOpen) props.onOpen(entry);
+                          return;
+                        }
+                        let temp = path;
+                        if (!temp.endsWith('/')) temp += '/';
+                        temp += entry.name;
+                        pushPath(temp);
+                      }}
+                      className={[
+                        'fsEntry',
+                        selection.indexOf(index) >= 0 ? 'selected' : '',
+                      ].join(' ')}
+                    >
+                      {getFsTypeIcon(entry)}
+                      {entry.targetSize != null ? (
+                        <Progress
+                          className="absolute"
+                          value={
+                            entry.targetSize == 0
+                              ? -1
+                              : (100 / entry.targetSize) * entry.size
+                          }
+                        />
+                      ) : (
+                        ''
+                      )}
+
+                      <span className="name">{entry.name}</span>
+
+                      <span className="permissions">{entry.permissions}</span>
+                      <span className="type">{entry.type}</span>
+                      <span className="user">{entry.user}</span>
+                      <span className="group">{entry.group}</span>
+                      <span className="size">
+                        {bytes.format(entry.size, {
+                          mode: 'binary',
+                        })}
+                      </span>
+                      <span className="date">
+                        {entry.dateChange ?? new Date().toISOString()}
+                      </span>
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem>Cut</ContextMenuItem>
+                    <ContextMenuItem>Copy</ContextMenuItem>
+                    {props.rm ? (
+                      <ContextMenuItem
+                        onClick={async () => {
+                          //TODO: Use custom confirm dialog.
+                          if (
+                            !props.rm ||
+                            !confirm(
+                              'Are you sure you want to delete ' +
+                                entry.name +
+                                '?'
+                            )
+                          )
+                            return;
+                          await props.rm(entry.dir + '/' + entry.name);
+                          refreshPath();
+                        }}
+                      >
+                        Delete
+                      </ContextMenuItem>
+                    ) : (
+                      ''
+                    )}
+                    {props.mv ? (
+                      <ContextMenuItem
+                        onClick={async () => {
+                          setFsEntries([
+                            ...fsEntries.filter((x) => x !== entry),
+                          ]);
+                          setFsDummy({
+                            ...entry,
+                            apply: async (name) => {
+                              if (!props.mv) return;
+                              await props.mv(
+                                entry.dir + '/' + entry.name,
+                                entry.dir + '/' + name
+                              );
+                              await refreshPath();
+                            },
+                          });
+                        }}
+                      >
+                        Rename
+                      </ContextMenuItem>
+                    ) : (
+                      ''
+                    )}
+                    <ContextMenuItem>Properties</ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              ))}
+            {fsDummy ? (
+              <div key="/DUMMY/" className="fsEntry">
+                {getFsTypeIcon(fsDummy)}
+
+                <Input
+                  type="text"
+                  className="name"
+                  value={fsDummy.name}
+                  ref={focusInputRef}
+                  onChange={(evt) => {
+                    setFsDummy({ ...fsDummy, name: evt.target.value });
+                  }}
+                  onBlur={(evt) => {
+                    //TODO!
+                    //fsDummy.apply(evt.target.value);
+                  }}
+                  onKeyUp={(evt) => {
+                    if (
+                      evt.code == 'Enter' &&
+                      'value' in evt.target &&
+                      typeof evt.target.value === 'string'
+                    )
+                      fsDummy.apply(evt.target.value);
+                  }}
+                />
+              </div>
+            ) : (
+              ''
+            )}
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem
+            onClick={() => {
+              refreshPath();
+            }}
+          >
+            Refresh
+          </ContextMenuItem>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>New</ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {props.mkdir ? (
+                <ContextMenuItem
+                  onClick={async () => {
+                    if (!props.mkdir) return;
+                    const name = await makeEntry('dir');
+                    await props.mkdir(path + '/' + name);
+                  }}
+                >
+                  <Folder className="m-2 h-4 w-4" /> Folder
+                </ContextMenuItem>
+              ) : (
+                ''
+              )}
+              {props.touch ? (
+                <ContextMenuItem
+                  onClick={async () => {
+                    if (!props.touch) return;
+                    const name = await makeEntry('file');
+                    await props.touch(path + '/' + name);
+                  }}
+                >
+                  <File className="m-2 h-4 w-4" />
+                  Empty File
+                </ContextMenuItem>
+              ) : (
+                ''
+              )}
+              {props.download ? (
+                <ContextMenuItem
+                  onClick={async () => {
+                    if (!props.download) return;
+                    const name = await makeEntry('file');
+                    const url = prompt('Enter source URL');
+                    if (!url) return;
+                    await props.download(url, path + '/' + name);
+                  }}
+                >
+                  <DownloadCloud className="m-2 h-4 w-4" />
+                  Download
+                </ContextMenuItem>
+              ) : (
+                ''
+              )}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+          <ContextMenuItem>Properties</ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    </div>
+  );
+  // existing code
+}

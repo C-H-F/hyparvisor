@@ -1,0 +1,6 @@
+Source: https://github.com/novnc/noVNC/
+Verion: 1.4.0
+Commit: fca48df85d394b2c1e9d26ed6e9d10d33db9f4f4
+Date: 2024-01-19
+
+https://github.com/novnc/noVNC/commit/fca48df85d394b2c1e9d26ed6e9d10d33db9f4f4
