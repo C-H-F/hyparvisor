@@ -61,7 +61,7 @@ export default function Update() {
         <h2>Update</h2>
         {error != '' ? <Alert>{error}</Alert> : ''}
         {updateLog ? (
-          <pre className="m-5 whitespace-normal bg-gray-200 p-5 font-mono dark:bg-gray-800">
+          <pre className="m-5 whitespace-pre-wrap bg-gray-200 p-5 font-mono dark:bg-gray-800">
             {updateLog}
           </pre>
         ) : (
