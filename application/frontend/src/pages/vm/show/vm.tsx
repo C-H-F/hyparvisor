@@ -402,7 +402,11 @@ export default function ShowVm() {
                       icon = <NetworkIcon />;
                     }
                     return (
-                      <SortableList.Item id={index} className="flex w-full">
+                      <SortableList.Item
+                        id={index}
+                        className="flex w-full"
+                        data-key={key}
+                      >
                         <SortableList.DragHandle />
                         <div className="flex flex-grow items-center">
                           {icon}

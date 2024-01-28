@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { diskDevice, diskFromXml, diskToXml } from './disk.js';
+import { diskDevice, diskToXml } from './disk.js';
 import { graphicsDevice, graphicsToXml } from './graphics.js';
 import { isEmptyObject } from '../utils.js';
 import { interfaceDevice, interfaceToXml } from './interface.js';

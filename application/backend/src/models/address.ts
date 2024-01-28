@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { isEmptyObject } from '../utils.js';
 
 export const pciAddress = z.object({
   type: z.literal('pci'),
@@ -16,6 +15,7 @@ export const driveAddress = z.object({
   target: z.number(),
   unit: z.number(),
 });
+//export const address = pciAddress.or(driveAddress);
 export const address = z.discriminatedUnion('type', [
   pciAddress.partial(),
   driveAddress.partial(),
@@ -25,7 +25,6 @@ export type Address = z.infer<typeof address>;
 export function addressFromXml(mutXmlData: unknown) {
   if (!mutXmlData || typeof mutXmlData !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(mutXmlData));
-  const zAddress = address;
   const result: Partial<Address> = {};
   if ('@type' in mutXmlData) {
     const ans = mutXmlData['@type'] as typeof result.type;

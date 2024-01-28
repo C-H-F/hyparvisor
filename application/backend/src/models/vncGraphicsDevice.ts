@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { isEmptyObject } from '../utils.js';
 
 export const vncGraphicsDevice = z.object({
   deviceType: z.literal('graphics'),

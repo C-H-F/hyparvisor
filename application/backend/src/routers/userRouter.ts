@@ -2,7 +2,7 @@ import { trpc } from '../trpc.js';
 
 import { users, sessions, keyValues, systemUsers } from '../database/schema.js';
 
-import { eq, and, gte, gt, lte } from 'drizzle-orm/expressions.js';
+import { eq } from 'drizzle-orm/expressions.js';
 import { nanoid } from 'nanoid';
 
 import * as argon2 from 'argon2';
@@ -121,7 +121,7 @@ export const userRouter = trpc.router({
     .output(z.number())
     .mutation(async function ({ ctx }) {
       if (!ctx.session) throw new TRPCError({ code: 'UNAUTHORIZED' });
-      const user = await fetchUserFromSession(ctx.session);
+      await fetchUserFromSession(ctx.session);
       const res = db
         .update(sessions)
         .set({ end: new Date() })
@@ -240,11 +240,6 @@ async function encodeSystemUserPassword(
     password: encodedPassword,
   };
 }
-function sha512(data: string, encoding: crypto.Encoding = 'utf8'): string {
-  const hash = crypto.createHash('sha512');
-  hash.update(data, encoding);
-  return hash.digest('base64');
-}
 function encryptSymmetric(
   plain: string,
   password: string,
@@ -338,7 +333,7 @@ async function changePassword(
     newSystemUserSalt = salt;
   }
   db.transaction((tx) => {
-    db.update(users)
+    tx.update(users)
       .set({
         password: newLoginPasswordHash,
         passwordExpiration,
@@ -346,7 +341,7 @@ async function changePassword(
       .where(eq(users.id, userId))
       .run();
     if (systemUser) {
-      db.update(systemUsers)
+      tx.update(systemUsers)
         .set({
           password: newSystemUserPassword,
           salt: newSystemUserSalt,
@@ -354,7 +349,6 @@ async function changePassword(
         .where(eq(systemUsers.user, systemUser.user))
         .run();
     }
-
     // db.update(systemUsers).set({''})
   });
 }

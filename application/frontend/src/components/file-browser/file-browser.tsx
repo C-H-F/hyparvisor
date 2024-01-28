@@ -81,7 +81,7 @@ export default function FileBrowser(props: {
   const [path, setPath] = useState(props.defaultPath ?? '/');
   const [back, setBack] = useState<string[]>([]);
   const [forward, setForward] = useState<string[]>([]);
-  const [pendingRequests, setPendingRequests] = useState(0);
+  const [pendingRequests] = useState(0);
   const [layout, setLayout] = useState<Layout>('icon');
   const [fsEntries, setFsEntries] = useState<FsEntry[]>([]);
   const [fsDummy, setFsDummy] = useState<FsDummy | null>(null);
@@ -382,10 +382,6 @@ export default function FileBrowser(props: {
                   ref={focusInputRef}
                   onChange={(evt) => {
                     setFsDummy({ ...fsDummy, name: evt.target.value });
-                  }}
-                  onBlur={(evt) => {
-                    //TODO!
-                    //fsDummy.apply(evt.target.value);
                   }}
                   onKeyUp={(evt) => {
                     if (

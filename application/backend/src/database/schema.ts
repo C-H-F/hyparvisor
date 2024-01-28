@@ -4,7 +4,7 @@ import {
   integer,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
-import { InferModel, sql } from 'drizzle-orm';
+import { InferModel } from 'drizzle-orm';
 
 export const users = sqliteTable(
   'user',

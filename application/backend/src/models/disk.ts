@@ -1,4 +1,4 @@
-import { ZodTypeAny, z } from 'zod';
+import { z } from 'zod';
 import { isEmptyObject } from '../utils.js';
 import { isEmptyXmlNode } from '../xmlUtils.js';
 import { address, addressFromXml, addressToXml } from './address.js';
@@ -35,8 +35,6 @@ const networkProtocol = z.union([
     tls: z.boolean(), //'yes' | 'no'
   }),
 ]);
-
-const undef = z.undefined().optional();
 
 const source = z.union([
   //z.discriminatedUnion('type', [
@@ -249,6 +247,7 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
     typeof mutXmlData.source === 'object'
   ) {
     const source = mutXmlData.source;
+    //result.source = {};
 
     if ('@file' in source && typeof source['@file'] === 'string') {
       result.source = {
@@ -413,7 +412,6 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
       mutXmlData.backingStore &&
       typeof mutXmlData.backingStore === 'object')
   ) {
-    const zBackingStore = commonDiskDevice.shape.backingStore.unwrap();
     result.backingStore = {};
     const backingStore = mutXmlData.backingStore;
     //TODO: Subelements

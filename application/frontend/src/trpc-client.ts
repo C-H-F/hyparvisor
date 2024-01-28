@@ -5,7 +5,8 @@ import {
   loggerLink,
 } from '@trpc/client';
 import { observable } from '@trpc/server/observable';
-import { AppRouter } from '../../backend/src/server';
+import type { AppRouter } from '../../backend/src/server';
+//import { AppRouter } from '@backend/../dist/routers/appRouter';
 let sessionToken: string | null = null;
 export function setSessionToken(token: string | null) {
   sessionToken = token;

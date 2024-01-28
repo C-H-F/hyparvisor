@@ -4,7 +4,6 @@ import bytes from 'bytes-iec';
 import {
   Device,
   device,
-  devicesFromXml,
   pushDevicesFromXml,
   pushDevicesToXml,
 } from './device.js';

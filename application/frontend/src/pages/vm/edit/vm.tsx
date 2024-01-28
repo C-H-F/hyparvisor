@@ -1,19 +1,10 @@
-import FileBrowser from '@/components/file-browser/file-browser';
 import StandardLayout from '@/components/layout/standard-layout';
 import MemorySelector from '@/components/memorySelector';
 import { Button } from '@/components/shadcn/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/shadcn/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/shadcn/ui/dropdown-menu';
 import { Input } from '@/components/shadcn/ui/input';
@@ -21,7 +12,7 @@ import { Skeleton } from '@/components/shadcn/ui/skeleton';
 import { useAsyncEffect } from '@/lib/react-utils';
 import { client } from '@/trpc-client';
 import { Cpu, Disc, HardDrive, Network, PlusCircle } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { selectFile } from '@/components/file-selector';
 import { Device } from '@/models';
@@ -29,7 +20,7 @@ type VmDefinition = Awaited<ReturnType<typeof client.vm.getDefinition.query>>;
 export default function EditVm() {
   const { id } = useParams();
   const [definition, setDefinition] = useState<VmDefinition | null>(null);
-  const [fileSelectorVisible, setFileSelectorVisible] = useState(false);
+  const [_fileSelectorVisible, setFileSelectorVisible] = useState(false);
   let originalDefinition: VmDefinition | null = null;
   useAsyncEffect(async function () {
     const name = id ?? '';

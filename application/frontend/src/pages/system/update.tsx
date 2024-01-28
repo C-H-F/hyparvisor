@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/shadcn/ui/skeleton';
 import { useAsyncEffect } from '@/lib/react-utils';
 import { range } from '@/lib/utils';
 import { client } from '@/trpc-client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 export default function Update() {
   type UpdatePackages = Awaited<

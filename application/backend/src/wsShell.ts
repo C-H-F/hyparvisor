@@ -2,7 +2,6 @@
 import { nanoid } from 'nanoid';
 import { WebSocketServer } from 'ws';
 import pty from 'node-pty';
-import os from 'os';
 import { getOsShell } from './utils.js';
 
 export function createWebsocketShell(url: string) {

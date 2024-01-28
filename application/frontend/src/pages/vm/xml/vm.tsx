@@ -5,18 +5,15 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarShortcut,
-  MenubarSub,
-  MenubarSubContent,
-  MenubarSubTrigger,
   MenubarTrigger,
 } from '@/components/shadcn/ui/menubar';
 import { useAsyncEffect } from '@/lib/react-utils';
 import { downloadFile } from '@/lib/utils';
 import { client } from '@/trpc-client';
-import Editor, { useMonaco, OnMount } from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 export default function XmlVm() {
   const { id } = useParams();
   if (!id) throw new Error(); //Should not happen. Otherwise useNavigate()('/vm');

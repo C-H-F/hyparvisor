@@ -1,9 +1,8 @@
 import { nanoid } from 'nanoid';
-import { exec, spawn } from 'node:child_process';
+import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { WebSocket, WebSocketServer } from 'ws';
 import { closeSocketWithError } from './utils.js';
-import { fetchUserFromSession } from './trpcUtils.js';
 const execAsync = promisify(exec);
 
 export function createWebsockifyWrapper(args: { rootPath: string }) {

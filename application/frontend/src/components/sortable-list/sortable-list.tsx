@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import type { ReactNode } from 'react';
 import {
   DndContext,
@@ -7,7 +7,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { Active, UniqueIdentifier } from '@dnd-kit/core';
+import type { UniqueIdentifier } from '@dnd-kit/core';
 import {
   SortableContext,
   arrayMove,
@@ -15,7 +15,6 @@ import {
 } from '@dnd-kit/sortable';
 
 import { DragHandle, SortableItem } from './sortable-item';
-import { SortableOverlay } from './sortable-overlay';
 
 interface BaseItem {
   id: UniqueIdentifier;
@@ -32,11 +31,6 @@ export function SortableList<T extends BaseItem>({
   onChange,
   renderItem,
 }: Props<T>) {
-  const [active, setActive] = useState<Active | null>(null);
-  const activeItem = useMemo(
-    () => items.find((item) => item.id === active?.id),
-    [active, items]
-  );
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -47,9 +41,6 @@ export function SortableList<T extends BaseItem>({
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={({ active }) => {
-        setActive(active);
-      }}
       onDragEnd={({ active, over }) => {
         if (over && active.id !== over?.id) {
           const activeIndex = items.findIndex(({ id }) => id === active.id);
@@ -57,10 +48,6 @@ export function SortableList<T extends BaseItem>({
 
           onChange(arrayMove(items, activeIndex, overIndex));
         }
-        setActive(null);
-      }}
-      onDragCancel={() => {
-        setActive(null);
       }}
     >
       <SortableContext items={items}>
@@ -73,9 +60,6 @@ export function SortableList<T extends BaseItem>({
           ))}
         </ul>
       </SortableContext>
-      {/* <SortableOverlay>
-        {activeItem ? renderItem(activeItem) : null}
-      </SortableOverlay> */}
     </DndContext>
   );
 }

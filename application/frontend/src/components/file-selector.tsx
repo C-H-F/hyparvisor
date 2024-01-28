@@ -22,9 +22,7 @@ export function FileSelector(props: {
   const [fileSelectorVisible, setFileSelectorVisible] = useState(true);
   const [selection, setSelection] = useState<string[]>([]);
 
-  const [filter, setFilter] = useState(
-    Object.keys(props.filters ?? {})[0] ?? ''
-  );
+  const [filter] = useState(Object.keys(props.filters ?? {})[0] ?? '');
   //TODO: Use onSelection instead of onNavigate.
   //TODO: Change display of selected value by combining path and selection filename afterwards...
   //TODO: Implement filter possibilities (Regex) --> Toggle button on top.
@@ -48,9 +46,6 @@ export function FileSelector(props: {
             touch={touch}
             mkdir={(path: string) => mkdir(path)}
             download={download}
-            onNavigate={(path) => {
-              //setSelection([path]);
-            }}
             onSelect={(selections) =>
               setSelection(selections.map((x) => combinePath(x.dir, x.name)))
             }

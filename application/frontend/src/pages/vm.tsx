@@ -7,14 +7,9 @@ import { VmDefinition, VmList } from '@/models';
 import { client } from '@/trpc-client';
 import { AlertTriangleIcon, Edit, Play, Square } from 'lucide-react';
 import { ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import bytes from 'bytes-iec';
-
-function vmName(vms: string[]) {
-  if (vms.length == 1) return vms[0];
-  return vms.length + ' virtual machines';
-}
 
 export default function Vm() {
   const [virtualMachines, setVirtualMachines] = useState<VmList>([]);

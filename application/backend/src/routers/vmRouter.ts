@@ -9,7 +9,6 @@ import bytes from 'bytes-iec';
 import { withFile } from 'tmp-promise';
 import { writeFile, readFile } from 'fs/promises';
 import {
-  VmDefinition,
   vmDefinition,
   vmDefinitionFromXml,
   vmDefinitionToXml,
@@ -17,7 +16,6 @@ import {
 const execAsync = promisify(exec);
 
 const vmState = z.enum(['undefined', 'shut off', 'running', 'paused']);
-type VmState = z.infer<typeof vmState>;
 
 const instance = z.object({
   id: z.string().optional(),
@@ -41,7 +39,6 @@ const vmInformation = z.object({
   securityModel: z.string(),
   securityDoi: z.string(),
 });
-type VmInformation = z.infer<typeof vmInformation>;
 
 export const vmRouter = trpc.router({
   start: trpc.procedure
@@ -369,7 +366,7 @@ export const vmRouter = trpc.router({
     .query(async function ({ input, ctx }) {
       await fetchUserFromSession(ctx.session);
       return await withFile(async function ({ path }) {
-        const { stdout: response } = await execAsync(
+        await execAsync(
           'virsh screenshot ' + escapeShellArgument(input.name) + ' ' + path
         );
         const content = await readFile(path);
@@ -467,9 +464,7 @@ function parseTable(
     if (line.trim().length == 0) continue;
     if (i == 0) {
       //Header line determine positions
-      let spaces = 0;
       let title = '';
-      let pos = 0;
 
       //for (let j = 0; j < line.length; j++) {
       while (true) {

@@ -1,7 +1,7 @@
 import { inferAsyncReturnType } from '@trpc/server';
 import { CreateNextContextOptions } from '@trpc/server/adapters/next';
 
-export async function createContext({ req, res }: CreateNextContextOptions) {
+export async function createContext({ req }: CreateNextContextOptions) {
   async function getSessionFromHeader() {
     const auth = req?.headers?.authorization;
     if (typeof auth === 'string') {

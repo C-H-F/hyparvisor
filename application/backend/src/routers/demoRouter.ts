@@ -12,7 +12,7 @@ export const demoRouter = trpc.router({
     })
     .input(z.void())
     .output(z.literal('It works!'))
-    .query(function (x) {
+    .query(function (_) {
       return 'It works!' as const;
     }),
   demo2: trpc.procedure
