@@ -16,10 +16,7 @@ export const driveAddress = z.object({
   unit: z.number(),
 });
 //export const address = pciAddress.or(driveAddress);
-export const address = z.discriminatedUnion('type', [
-  pciAddress.partial(),
-  driveAddress.partial(),
-]);
+export const address = z.union([pciAddress.partial(), driveAddress.partial()]);
 export type Address = z.infer<typeof address>;
 
 export function addressFromXml(mutXmlData: unknown) {
