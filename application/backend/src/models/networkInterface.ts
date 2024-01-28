@@ -101,9 +101,9 @@ export function networkInterfaceFromXml(
     mutXmlData.model
   ) {
     if ('@type' in mutXmlData.model) {
-      result.model = networkInterfaceDevice
-        .pick({ model: true })
-        .parse(mutXmlData.model['@type']).model;
+      result.model = networkInterfaceDevice.shape.model.parse(
+        mutXmlData.model['@type']
+      );
       delete mutXmlData.model['@type'];
     }
     if (isEmptyObject(mutXmlData.model)) delete mutXmlData.model;
