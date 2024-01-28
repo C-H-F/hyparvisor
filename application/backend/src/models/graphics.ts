@@ -27,7 +27,7 @@ export function graphicsFromXml(mutXmlData: unknown): GraphicsDevice {
   };
 }
 
-export function graphicsToXml(graphics: GraphicsDevice) {
+export function graphicsToXml(graphics: Partial<GraphicsDevice>) {
   if (graphics.graphicsDevice === 'vnc') return vncGraphicsToXml(graphics);
   return {};
 }

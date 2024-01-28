@@ -53,7 +53,7 @@ export const systemRouter = trpc.router({
       const response = execSync('uptime', { encoding: 'utf8' });
       const regex = /.* up (.*),\s*(\d)+ user(?:s)?,\s*load average: (.*)/g;
       const res = regex.exec(response);
-
+      if (!res) throw new Error('Invalid response: ' + response);
       const uptime = res[1];
       const users = +res[2];
       const load = res[3].split(', ').map((x) => +x);

@@ -1,5 +1,4 @@
 //import { spawn } from 'child_process';
-import { access } from 'fs';
 import { nanoid } from 'nanoid';
 import { WebSocketServer } from 'ws';
 import pty from 'node-pty';
@@ -23,7 +22,11 @@ export function createWebsocketShell(url: string) {
       }, timeoutMs);
       return token;
     },
-    handleUpgrade: function (request, socket, head) {
+    handleUpgrade: function (
+      request: Parameters<typeof websocketServer.handleUpgrade>[0],
+      socket: Parameters<typeof websocketServer.handleUpgrade>[1],
+      head: Parameters<typeof websocketServer.handleUpgrade>[2]
+    ) {
       websocketServer.handleUpgrade(
         request,
         socket,
@@ -64,8 +67,8 @@ export function createWebsocketShell(url: string) {
             if ('type' in pkg && pkg.type === 'resize') {
               let cols = ptyProcess.cols;
               let rows = ptyProcess.rows;
-              if ('cols' in pkg) cols = +pkg.cols;
-              if ('rows' in pkg) rows = +pkg.rows;
+              if ('cols' in pkg) cols = +(pkg.cols as any);
+              if ('rows' in pkg) rows = +(pkg.rows as any);
               try {
                 ptyProcess.resize(cols, rows);
               } catch (ex) {

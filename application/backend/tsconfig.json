@@ -4,9 +4,12 @@
     "moduleResolution": "NodeNext",
     "target": "ESNext",
     "sourceMap": true,
-    "outDir": "dist"
+    "outDir": "_dist",
+    "declaration": true,
+    "strict": true
   },
   "include": ["src/**/*"],
+  "exclude": ["node_modules"],
   "ts-node": {
     "esm": true
   }

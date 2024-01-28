@@ -27,7 +27,7 @@ export function interfaceFromXml(mutXmlData: unknown): InterfaceDevice {
   };
 }
 
-export function interfaceToXml(device: InterfaceDevice) {
+export function interfaceToXml(device: Partial<InterfaceDevice>) {
   if (device.interfaceType === 'network') return networkInterfaceToXml(device);
   return {};
 }

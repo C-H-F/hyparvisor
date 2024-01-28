@@ -71,7 +71,7 @@ export function vmDefinitionFromXml(mutXmlData: any) {
 
   const result: VmDefinition = {
     name,
-    id,
+    id: id ?? 0,
     osId,
     memory,
     uuid,
@@ -85,21 +85,26 @@ export function vmDefinitionFromXml(mutXmlData: any) {
 
   return result;
 }
-export function vmDefinitionToXml(mutDefinition: VmDefinition) {
+export function vmDefinitionToXml(mutDefinition: Partial<VmDefinition>) {
   const definition = mutDefinition;
-  const result = definition['_raw'] ?? {};
+  const result: any = definition['_raw'] ?? {};
   delete definition['_raw'];
 
   if (definition.id != null) result['@id'] = definition.id;
   if (definition.name != null) result['name'] = definition.name;
   if (definition.memory != null) {
     if (result['memory'] == null) result['memory'] = {};
-    const [size, unit] = bytes
-      .format(definition.memory, {
-        mode: 'binary',
-        unitSeparator: ' ',
-      })
-      .split(' ');
+    const formattedBytes = bytes.format(definition.memory, {
+      mode: 'binary',
+      unitSeparator: ' ',
+    });
+    if (!formattedBytes)
+      throw new Error(
+        'Problems occured while exporting memory size: "' +
+          JSON.stringify(definition.memory) +
+          '"'
+      );
+    const [size, unit] = formattedBytes.split(' ');
     result['memory']['#text'] = size;
     result['memory']['@unit'] = unit;
   }
@@ -123,6 +128,6 @@ export function vmDefinitionToXml(mutDefinition: VmDefinition) {
     result['metadata']['libosinfo:libosinfo']['@xmlns:libosinfo'] =
       'http://libosinfo.org/xmlns/libvirt/domain/1.0';
   }
-  pushDevicesToXml(definition.devices, result);
+  if (definition.devices) pushDevicesToXml(definition.devices, result);
   return result;
 }

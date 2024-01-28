@@ -26,7 +26,7 @@ export function vncGraphicsFromXmlData(mutXmlData: unknown): VncGraphicsDevice {
   };
   delete mutXmlData['@type'];
   if ('@port' in mutXmlData) {
-    result.port = +mutXmlData['@port'];
+    result.port = +(mutXmlData['@port'] as any);
     delete mutXmlData['@port'];
   }
   if ('@autoport' in mutXmlData) {
@@ -38,13 +38,12 @@ export function vncGraphicsFromXmlData(mutXmlData: unknown): VncGraphicsDevice {
     delete mutXmlData['@passwd'];
   }
   if ('@websocket' in mutXmlData) {
-    result.websocket = +mutXmlData['@websocket'];
+    result.websocket = +(mutXmlData['@websocket'] as any);
     delete mutXmlData['@websocket'];
   }
   if ('@listen' in mutXmlData) {
     result.listen = mutXmlData['@listen'] + '';
     delete mutXmlData['@listen'];
-    delete mutXmlData['listen'];
   }
   if ('@keymap' in mutXmlData) {
     result.keymap = mutXmlData['@keymap'] + '';
@@ -53,7 +52,7 @@ export function vncGraphicsFromXmlData(mutXmlData: unknown): VncGraphicsDevice {
   return result;
 }
 
-export function vncGraphicsToXml(graphics: VncGraphicsDevice) {
+export function vncGraphicsToXml(graphics: Partial<VncGraphicsDevice>) {
   const result: any = { '@type': 'vnc' };
   if (graphics.port != null) result['@port'] = graphics.port;
   if (graphics.autoport != null)

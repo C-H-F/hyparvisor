@@ -104,7 +104,7 @@ export const fileRouter = trpc.router({
       });
 
       const body = await fetchResponse.body;
-      await body.pipeTo(fileWritableStream);
+      await body?.pipeTo(fileWritableStream);
       await rename(dst, input.destination);
       db.delete(temporaries).where(eq(temporaries.key, key)).run();
     }),

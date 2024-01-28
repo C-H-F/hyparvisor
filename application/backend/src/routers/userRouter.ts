@@ -120,7 +120,8 @@ export const userRouter = trpc.router({
     .input(z.void())
     .output(z.number())
     .mutation(async function ({ ctx }) {
-      await fetchUserFromSession(ctx.session);
+      if (!ctx.session) throw new TRPCError({ code: 'UNAUTHORIZED' });
+      const user = await fetchUserFromSession(ctx.session);
       const res = db
         .update(sessions)
         .set({ end: new Date() })
@@ -139,8 +140,9 @@ export const userRouter = trpc.router({
       },
     })
     .input(z.void())
-    .output(z.date().optional())
+    .output(z.date().nullable())
     .mutation(async function ({ ctx }) {
+      if (!ctx.session) return null;
       await fetchUserFromSession(ctx.session);
       const sessionTimeout = await getSessionTimeout();
       const now = new Date();
@@ -174,7 +176,7 @@ export const userRouter = trpc.router({
           .where(eq(users.id, user))
           .limit(1)
           .all();
-        if(result.length < 1) return null;
+        if (result.length < 1) return null;
         return result[0].email;
       } catch {
         return null;
@@ -281,9 +283,9 @@ function decryptSymmetric(
 ): string {
   const [_, algorithm, parameterString, data] = cipher.split('$');
   const params = parameterString.split(',');
-  const salt = params.find((p) => p.startsWith('s=')).substring(2);
-  const iv = params.find((p) => p.startsWith('i=')).substring(2);
-  const auth = params.find((p) => p.startsWith('a=')).substring(2);
+  const salt = params.find((p) => p.startsWith('s='))?.substring(2) ?? '';
+  const iv = params.find((p) => p.startsWith('i='))?.substring(2) ?? '';
+  const auth = params.find((p) => p.startsWith('a='))?.substring(2) ?? '';
   const key = crypto.pbkdf2Sync(
     Buffer.from(password, encoding),
     Buffer.from(salt, 'base64'),

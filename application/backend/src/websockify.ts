@@ -24,7 +24,7 @@ export function createWebsockifyWrapper(args: { rootPath: string }) {
       //   return;
       // }
 
-      if (!request.url.startsWith(rootPath)) {
+      if (!request.url?.startsWith(rootPath)) {
         socket.destroy({
           message: 'Invalid path.',
           name:
@@ -36,7 +36,7 @@ export function createWebsockifyWrapper(args: { rootPath: string }) {
         });
         return;
       }
-      const serverPort = +request.url.substring(rootPath.length);
+      const serverPort = +request.url?.substring(rootPath.length);
       if (isNaN(serverPort) || serverPort < 1 || serverPort > 65535) {
         closeSocketWithError(
           socket,
@@ -72,7 +72,7 @@ export function createWebsockifyWrapper(args: { rootPath: string }) {
           }
           websockifyPort = +ans[2];
         } catch (err) {
-          reason = err;
+          reason = err + '';
         }
         break;
       }

@@ -35,12 +35,12 @@ const websockifyWrapper = createWebsockifyWrapper({
 const websocketShell = createWebsocketShell('/api/shell');
 setWebSocketShellRequestTokenFunction(websocketShell.requestAccess); //TODO: Change to a better solution when there is time.
 server.on('upgrade', (request, socket, head) => {
-  if (request.url.startsWith('/websockify/')) {
+  if (request.url?.startsWith('/websockify/')) {
     websockifyWrapper.handleUpgrade(request, socket, head);
     return;
   }
 
-  if (request.url.startsWith('/api/shell/')) {
+  if (request.url?.startsWith('/api/shell/')) {
     websocketShell.handleUpgrade(request, socket, head);
     return;
   }

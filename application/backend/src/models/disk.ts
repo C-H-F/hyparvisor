@@ -225,7 +225,7 @@ export type DiskDevice = z.infer<typeof diskDevice>;
 export function diskFromXml(mutXmlData: unknown): DiskDevice {
   if (!mutXmlData || typeof mutXmlData !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(mutXmlData));
-  const result: DiskDevice = {
+  const result: Partial<DiskDevice> = {
     deviceType: 'disk',
   };
 
@@ -249,12 +249,6 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
     typeof mutXmlData.source === 'object'
   ) {
     const source = mutXmlData.source;
-    result.source = {};
-
-    if ('@index' in source) {
-      result.source.index = +source['@index'];
-      delete source['@index'];
-    }
 
     if ('@file' in source && typeof source['@file'] === 'string') {
       result.source = {
@@ -267,7 +261,7 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
         type: 'block',
         value: source['@block'],
       };
-      delete source['@dir'];
+      delete source['@block'];
     } else if ('@dir' in source && typeof source['@dir'] === 'string') {
       result.source = {
         type: 'dir',
@@ -275,12 +269,20 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
       };
       delete source['@dir'];
     }
+    if ('@index' in source) {
+      (result as any).source.index = +(source['@index'] as any);
+      delete source['@index'];
+    }
 
     //TODO: Add more disk sources here. Continue here (https://libvirt.org/formatdomain.html#devices)
 
     if (isEmptyObject(source)) delete mutXmlData.source;
   }
-  if ('alias' in mutXmlData && typeof mutXmlData.alias === 'object') {
+  if (
+    'alias' in mutXmlData &&
+    typeof mutXmlData.alias === 'object' &&
+    mutXmlData.alias
+  ) {
     if ('@name' in mutXmlData.alias) {
       result.alias = mutXmlData.alias['@name'] + '';
       delete mutXmlData.alias['@name'];
@@ -290,51 +292,52 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
   if (
     'driver' in mutXmlData &&
     mutXmlData.driver &&
-    typeof mutXmlData.driver === 'object'
+    typeof mutXmlData.driver === 'object' &&
+    mutXmlData.driver
   ) {
     const zDriver = commonDiskDevice.shape.driver.unwrap();
     const driver = mutXmlData.driver;
-    result.driver = {};
+    const resultDriver = {} as any;
     if ('@name' in driver) {
-      result.driver.name = zDriver.shape.name.parse(driver['@name']);
+      resultDriver.name = zDriver.shape.name.parse(driver['@name']);
       delete driver['@name'];
     }
     if ('@type' in driver) {
-      result.driver.type = zDriver.shape.type.parse(driver['@type']);
+      resultDriver.type = zDriver.shape.type.parse(driver['@type']);
       delete driver['@type'];
     }
     if ('@cache' in driver) {
-      result.driver.cache = zDriver.shape.cache.parse(driver['@cache']);
+      resultDriver.cache = zDriver.shape.cache.parse(driver['@cache']);
       delete driver['@cache'];
     }
     if ('@error_policy' in driver) {
-      result.driver.errorPolicy = zDriver.shape.errorPolicy.parse(
+      resultDriver.errorPolicy = zDriver.shape.errorPolicy.parse(
         driver['@error_policy']
       );
       delete driver['@error_policy'];
     }
     if ('@io' in driver) {
-      result.driver.io = zDriver.shape.io.parse(driver['@io']);
+      resultDriver.io = zDriver.shape.io.parse(driver['@io']);
       delete driver['@io'];
     }
     if ('@ioeventfd' in driver) {
-      result.driver.ioeventfd = driver['@ioeventfd'] === 'on';
+      resultDriver.ioeventfd = driver['@ioeventfd'] === 'on';
       delete driver['@ioeventfd'];
     }
     if ('@event_idx' in driver) {
-      result.driver.eventIdx = driver['@event_idx'] === 'on';
+      resultDriver.eventIdx = driver['@event_idx'] === 'on';
       delete driver['@event_idx'];
     }
     if ('@copy_on_read' in driver) {
-      result.driver.copyOnRead = driver['@copy_on_read'] === 'on';
+      resultDriver.copyOnRead = driver['@copy_on_read'] === 'on';
       delete driver['@copy_on_read'];
     }
     if ('@discard' in driver) {
-      result.driver.discard = zDriver.shape.discard.parse(driver['@discard']);
+      resultDriver.discard = zDriver.shape.discard.parse(driver['@discard']);
       delete driver['@discard'];
     }
     if ('@detect_zeroes' in driver) {
-      result.driver.detectZeroes = zDriver.shape.detectZeroes.parse(
+      resultDriver.detectZeroes = zDriver.shape.detectZeroes.parse(
         driver['@detect_zeroes']
       );
       delete driver['@detect_zeroes'];
@@ -344,17 +347,19 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
       console.error('NOT IMPLEMENTED: iothread!');
     }
     if ('@queues' in driver) {
-      result.driver.queues = +driver['@queues'];
+      resultDriver.queues = +(driver['@queues'] as any);
       delete driver['@queues'];
     }
     if ('@queue_size' in driver) {
-      result.driver.queueSize = +driver['@queue_size'];
+      resultDriver.queueSize = +(driver['@queue_size'] as any);
       delete driver['@queue_size'];
     }
     if ('metadata_cache' in driver) {
       //TODO
       console.error('NOT IMPLEMENTED: metadataCache!');
     }
+    result.driver = resultDriver;
+
     if (isEmptyObject(driver)) delete mutXmlData.driver;
   }
   if (
@@ -362,7 +367,7 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
     mutXmlData.address &&
     typeof mutXmlData.address === 'object'
   ) {
-    result.address = addressFromXml(mutXmlData.address);
+    (result as any).address = addressFromXml(mutXmlData.address);
     if (isEmptyObject(mutXmlData.address)) delete mutXmlData.address;
   }
   if ('readonly' in mutXmlData) {
@@ -375,28 +380,30 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
     typeof mutXmlData.target === 'object'
   ) {
     const zTarget = commonDiskDevice.shape.target.unwrap();
-    result.target = {};
+
+    const resultTarget: any = {};
     const target = mutXmlData.target;
     if ('@dev' in target) {
-      result.target.dev = target['@dev'] + '';
+      resultTarget.dev = target['@dev'] + '';
       delete target['@dev'];
     }
     if ('@bus' in target) {
-      result.target.bus = zTarget.shape.bus.parse(target['@bus']);
+      resultTarget.bus = zTarget.shape.bus.parse(target['@bus']);
       delete target['@bus'];
     }
     if ('@tray' in target) {
-      result.target.tray = target['@tray'] === 'open';
+      resultTarget.tray = target['@tray'] === 'open';
       delete target['@tray'];
     }
     if ('@removable' in target) {
-      result.target.removable = target['@removable'] === 'on';
+      resultTarget.removable = target['@removable'] === 'on';
       delete target['@removable'];
     }
     if ('@rotation_rate' in target) {
-      result.target.rotationRate = +target['@rotation_rate'];
+      resultTarget.rotationRate = +(target['@rotation_rate'] as any);
       delete target['@rotation_rate'];
     }
+    result.target = resultTarget;
     if (isEmptyObject(target)) delete mutXmlData.target;
   }
 
@@ -418,10 +425,10 @@ export function diskFromXml(mutXmlData: unknown): DiskDevice {
 
   console.log(result);
   diskDevice.parse(result);
-  return result;
+  return result as DiskDevice;
 }
-export function diskToXml(disk: DiskDevice) {
-  const result = {
+export function diskToXml(disk: Partial<DiskDevice>) {
+  const result: any = {
     '@device': disk.device,
   };
   if (disk.type) result['@type'] = disk.type;

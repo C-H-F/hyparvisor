@@ -9,6 +9,7 @@ import bytes from 'bytes-iec';
 import { withFile } from 'tmp-promise';
 import { writeFile, readFile } from 'fs/promises';
 import {
+  VmDefinition,
   vmDefinition,
   vmDefinitionFromXml,
   vmDefinitionToXml,
@@ -178,6 +179,7 @@ export const vmRouter = trpc.router({
 
       const id = z
         .number()
+        .optional()
         .catch(undefined)
         .parse(/Id:\s+(.*)\n/i.exec(response)?.[1] ?? ''); //<-- TODO: incorrect
       const uuid = /UUID:\s+(.*)\n/i.exec(response)?.[1] ?? '';
@@ -204,8 +206,8 @@ export const vmRouter = trpc.router({
         state: vmState.catch('undefined').parse(state),
         cpus,
         cpuTime,
-        maxMemory: bytes.parse(maxMemory),
-        usedMemory: bytes.parse(usedMemory),
+        maxMemory: bytes.parse(maxMemory) ?? 0,
+        usedMemory: bytes.parse(usedMemory) ?? 0,
         persistent,
         autostart,
         managedSave,

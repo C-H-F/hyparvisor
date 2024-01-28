@@ -16,33 +16,36 @@ export const driveAddress = z.object({
   target: z.number(),
   unit: z.number(),
 });
-export const address = pciAddress.or(driveAddress);
+export const address = z.discriminatedUnion('type', [
+  pciAddress.partial(),
+  driveAddress.partial(),
+]);
 export type Address = z.infer<typeof address>;
 
 export function addressFromXml(mutXmlData: unknown) {
   if (!mutXmlData || typeof mutXmlData !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(mutXmlData));
   const zAddress = address;
-  const result: Address = {};
+  const result: Partial<Address> = {};
   if ('@type' in mutXmlData) {
     const ans = mutXmlData['@type'] as typeof result.type;
     result.type = ans;
     delete mutXmlData['@type'];
     if (result.type == 'pci') {
       if ('@bus' in mutXmlData) {
-        result.bus = +mutXmlData['@bus'];
+        result.bus = +(mutXmlData['@bus'] as any);
         delete mutXmlData['@bus'];
       }
       if ('@slot' in mutXmlData) {
-        result.slot = +mutXmlData['@slot'];
+        result.slot = +(mutXmlData['@slot'] as any);
         delete mutXmlData['@slot'];
       }
       if ('@function' in mutXmlData) {
-        result.function = +mutXmlData['@function'];
+        result.function = +(mutXmlData['@function'] as any);
         delete mutXmlData['@function'];
       }
       if ('@domain' in mutXmlData) {
-        result.domain = +mutXmlData['@domain'];
+        result.domain = +(mutXmlData['@domain'] as any);
         delete mutXmlData['@domain'];
       }
       if ('@multifunction' in mutXmlData) {
@@ -52,26 +55,26 @@ export function addressFromXml(mutXmlData: unknown) {
     }
     if (result.type == 'drive') {
       if ('@controller' in mutXmlData) {
-        result.controller = +mutXmlData['@controller'];
+        result.controller = +(mutXmlData['@controller'] as any);
         delete mutXmlData['@controller'];
       }
       if ('@bus' in mutXmlData) {
-        result.bus = +mutXmlData['@bus'];
+        result.bus = +(mutXmlData['@bus'] as any);
         delete mutXmlData['@bus'];
       }
       if ('@target' in mutXmlData) {
-        result.target = +mutXmlData['@target'];
+        result.target = +(mutXmlData['@target'] as any);
         delete mutXmlData['@target'];
       }
       if ('@unit' in mutXmlData) {
-        result.unit = +mutXmlData['@unit'];
+        result.unit = +(mutXmlData['@unit'] as any);
         delete mutXmlData['@unit'];
       }
     }
   }
   return result;
 }
-export function addressToXml(address: Address, mutXmlData: unknown = null) {
+export function addressToXml(address: Address, mutXmlData: any = null) {
   if (!mutXmlData || typeof mutXmlData !== 'object') mutXmlData = {};
   if (address.type === 'pci') {
     if (address.type) mutXmlData['@type'] = address.type;

@@ -45,7 +45,7 @@ export function devicesFromXml<T>(
   return devices;
 }
 
-export function pushDevicesFromXml<T>(
+export function pushDevicesFromXml<T extends Device>(
   devices: Device[],
   mutXmlData: unknown,
   key: string,
@@ -54,35 +54,43 @@ export function pushDevicesFromXml<T>(
   if (!mutXmlData) return;
   if (typeof mutXmlData !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(mutXmlData));
-  devices.push(...devicesFromXml(mutXmlData[key], deviceFromXml));
-  if (Array.isArray(mutXmlData[key])) {
+  const xmlData = mutXmlData as Record<string, unknown>;
+  devices.push(...devicesFromXml(xmlData[key], deviceFromXml));
+  if (Array.isArray(xmlData[key] as unknown)) {
+    const arr = xmlData[key] as unknown[];
     let allEmpty = true;
-    for (let i = 0; i < mutXmlData[key].length ?? 0; i++)
-      if (!isEmptyObject(mutXmlData[key][i])) {
+    for (let i = 0; i < arr.length ?? 0; i++)
+      if (!isEmptyObject(arr[i])) {
         allEmpty = false;
         break;
       }
-    if (allEmpty) delete mutXmlData[key];
-  } else if (isEmptyObject(mutXmlData[key])) delete mutXmlData[key];
+    if (allEmpty) delete xmlData[key];
+  } else if (isEmptyObject(xmlData[key])) delete xmlData[key];
 }
 function pushValueToXml(xml: unknown, key: string, value: unknown) {
-  if (typeof xml !== 'object')
+  if (!xml || typeof xml !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(xml));
-  let arr = [];
-  if (!(key in xml)) xml[key] = arr;
-  else if (Array.isArray(xml[key])) arr = xml[key];
+  let arr = [] as unknown[];
+  if (!(key in xml)) (xml as any)[key] = arr;
+  else if (Array.isArray((xml as any)[key])) arr = (xml as any)[key];
   else {
-    arr.push(xml[key]);
-    xml[key] = arr;
+    arr.push((xml as any)[key]);
+    (xml as any)[key] = arr;
   }
   arr.push(value);
 }
-export function pushDevicesToXml(devices: Device[], result: unknown) {
+export function pushDevicesToXml(devices: Partial<Device>[], result: unknown) {
   //TODO: Generate XML for device
+  if (!result || typeof result !== 'object')
+    throw new Error('Object expected. Got ' + JSON.stringify(result));
   let xmlDevices = {};
-  if (result['devices'] && typeof result['devices'] === 'object')
+  if (
+    'devices' in result &&
+    result['devices'] &&
+    typeof result['devices'] === 'object'
+  )
     xmlDevices = result['devices'];
-  else result['devices'] = xmlDevices;
+  else (result as any)['devices'] = xmlDevices;
 
   for (const device of devices) {
     if (device.deviceType === 'disk') {

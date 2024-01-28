@@ -36,7 +36,9 @@ export const networkInterfaceDevice = z.object({
 });
 export type NetworkInterfaceDevice = z.infer<typeof networkInterfaceDevice>;
 
-export function networkInterfaceFromXml(mutXmlData): NetworkInterfaceDevice {
+export function networkInterfaceFromXml(
+  mutXmlData: unknown
+): NetworkInterfaceDevice {
   if (!mutXmlData || typeof mutXmlData !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(mutXmlData));
   if (!('@type' in mutXmlData && mutXmlData['@type'] === 'network'))
@@ -48,31 +50,43 @@ export function networkInterfaceFromXml(mutXmlData): NetworkInterfaceDevice {
     interfaceType: 'network',
   };
   delete mutXmlData['@type'];
-  if ('mac' in mutXmlData) {
+  if (
+    'mac' in mutXmlData &&
+    typeof mutXmlData.mac === 'object' &&
+    mutXmlData.mac
+  ) {
     if ('@address' in mutXmlData.mac) {
-      result.macAddress = mutXmlData.mac['@address'];
+      result.macAddress = mutXmlData.mac['@address'] + '';
       delete mutXmlData.mac['@address'];
     }
     if (isEmptyObject(mutXmlData.mac)) delete mutXmlData.mac;
   }
-  if ('source' in mutXmlData) {
+  if (
+    'source' in mutXmlData &&
+    typeof mutXmlData.source === 'object' &&
+    mutXmlData.source
+  ) {
     if ('@network' in mutXmlData.source) {
-      result.sourceNetwork = mutXmlData.source['@network'];
+      result.sourceNetwork = mutXmlData.source['@network'] + '';
       delete mutXmlData.source['@network'];
     }
     if ('@bridge' in mutXmlData.source) {
-      result.sourceBridge = mutXmlData.source['@bridge'];
+      result.sourceBridge = mutXmlData.source['@bridge'] + '';
       delete mutXmlData.source['@bridge'];
     }
     if ('@portid' in mutXmlData.source) {
-      result.sourcePortId = mutXmlData.source['@portid'];
+      result.sourcePortId = mutXmlData.source['@portid'] + '';
       delete mutXmlData.source['@portid'];
     }
     if (isEmptyObject(mutXmlData.source)) delete mutXmlData.source;
   }
-  if ('target' in mutXmlData) {
+  if (
+    'target' in mutXmlData &&
+    typeof mutXmlData.target === 'object' &&
+    mutXmlData.target
+  ) {
     if ('@dev' in mutXmlData.target) {
-      result.targetDev = mutXmlData.target['@dev'];
+      result.targetDev = mutXmlData.target['@dev'] + '';
       delete mutXmlData.target['@dev'];
     }
     if ('@managed' in mutXmlData.target) {
@@ -81,16 +95,26 @@ export function networkInterfaceFromXml(mutXmlData): NetworkInterfaceDevice {
     }
     if (isEmptyObject(mutXmlData.target)) delete mutXmlData.target;
   }
-  if ('model' in mutXmlData) {
+  if (
+    'model' in mutXmlData &&
+    typeof mutXmlData.model === 'object' &&
+    mutXmlData.model
+  ) {
     if ('@type' in mutXmlData.model) {
-      result.model = mutXmlData.model['@type'];
+      result.model = networkInterfaceDevice
+        .pick({ model: true })
+        .parse(mutXmlData.model['@type']).model;
       delete mutXmlData.model['@type'];
     }
     if (isEmptyObject(mutXmlData.model)) delete mutXmlData.model;
   }
-  if ('alias' in mutXmlData) {
+  if (
+    'alias' in mutXmlData &&
+    typeof mutXmlData.alias === 'object' &&
+    mutXmlData.alias
+  ) {
     if ('@name' in mutXmlData.alias) {
-      result.alias = mutXmlData.alias['@name'];
+      result.alias = mutXmlData.alias['@name'] + '';
       delete mutXmlData.alias['@name'];
     }
     if (isEmptyObject(mutXmlData.alias)) delete mutXmlData.alias;
@@ -102,7 +126,7 @@ export function networkInterfaceFromXml(mutXmlData): NetworkInterfaceDevice {
   return result;
 }
 
-export function networkInterfaceToXml(device: NetworkInterfaceDevice) {
+export function networkInterfaceToXml(device: Partial<NetworkInterfaceDevice>) {
   const result: any = { '@type': 'network' };
   if (device.macAddress != null)
     result['mac'] = { '@address': device.macAddress };
