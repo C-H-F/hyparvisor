@@ -2,7 +2,8 @@
   "search.exclude": {
     "/node_modules/": true,
     "/_dist/": true,
-    "/_drizzle/": true
+    "/_drizzle/": true,
+    "/_htdocs/": true
   },
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode"
