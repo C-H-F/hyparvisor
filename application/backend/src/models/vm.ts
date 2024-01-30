@@ -10,6 +10,7 @@ import {
 import { diskFromXml } from './disk.js';
 import { graphicsFromXml } from './graphics.js';
 import { interfaceFromXml } from './interface.js';
+import { inputFromXml } from './input.js';
 
 export const vmDefinition = z.object({
   id: z.number(),
@@ -65,8 +66,7 @@ export function vmDefinitionFromXml(mutXmlData: any) {
   pushDevicesFromXml(devices, tmp.devices, 'disk', diskFromXml);
   pushDevicesFromXml(devices, tmp.devices, 'graphics', graphicsFromXml);
   pushDevicesFromXml(devices, tmp.devices, 'interface', interfaceFromXml);
-
-  console.log(tmp.devices);
+  pushDevicesFromXml(devices, tmp.devices, 'input', inputFromXml);
 
   const result: VmDefinition = {
     name,

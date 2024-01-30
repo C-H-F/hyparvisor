@@ -3,6 +3,7 @@ import { diskDevice, diskToXml } from './disk.js';
 import { graphicsDevice, graphicsToXml } from './graphics.js';
 import { isEmptyObject } from '../utils.js';
 import { interfaceDevice, interfaceToXml } from './interface.js';
+import { inputDevice, inputToXml } from './input.js';
 
 const unknownDevice = z.object({
   deviceType: z.literal('unknownDevice'),
@@ -13,22 +14,9 @@ export const device = z.union([
   unknownDevice,
   graphicsDevice,
   interfaceDevice,
+  inputDevice,
 ]); //TODO
 export type Device = z.infer<typeof device>;
-
-// export function deviceFromXml(mutXmlData: any): Device {
-//   if (mutXmlData['@device'] == 'cdrom' || mutXmlData['@device'] == 'disk') {
-//     const result = diskFromXml(mutXmlData);
-//     delete mutXmlData['@device'];
-//     return result;
-//   }
-//   return { deviceType: 'unknownDevice' };
-// }
-// export function deviceToXml(mutDevice: Device) {
-//   if (mutDevice.deviceType === 'disk') return diskToXml(mutDevice);
-//   if (mutDevice.deviceType === 'graphics') return graphicsToXml(mutDevice);
-//   return null;
-// }
 
 export function devicesFromXml<T>(
   mutXmlData: unknown,
@@ -39,8 +27,9 @@ export function devicesFromXml<T>(
   if (typeof mutXmlData !== 'object')
     throw new Error('Object expected. Got ' + JSON.stringify(mutXmlData));
   if (Array.isArray(mutXmlData))
-    for (let i = 0; i < mutXmlData?.length ?? 0; i++)
+    for (let i = 0; i < mutXmlData.length; i++) {
       devices.push(deviceFromXml(mutXmlData[i]));
+    }
   else devices.push(deviceFromXml(mutXmlData));
   return devices;
 }
@@ -96,7 +85,6 @@ export function pushDevicesToXml(devices: Partial<Device>[], result: unknown) {
     if (device.deviceType === 'disk') {
       const diskXml = diskToXml(device);
       pushValueToXml(xmlDevices, 'disk', diskXml);
-      console.log('DiskXml', diskXml);
     }
     if (device.deviceType === 'graphics') {
       const graphicsXml = graphicsToXml(device);
@@ -105,6 +93,10 @@ export function pushDevicesToXml(devices: Partial<Device>[], result: unknown) {
     if (device.deviceType === 'interface') {
       const interfaceXml = interfaceToXml(device);
       pushValueToXml(xmlDevices, 'interface', interfaceXml);
+    }
+    if (device.deviceType === 'input') {
+      const inputXml = inputToXml(device);
+      pushValueToXml(xmlDevices, 'input', inputXml);
     }
   }
 }

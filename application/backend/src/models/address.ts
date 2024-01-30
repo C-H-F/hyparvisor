@@ -15,8 +15,17 @@ export const driveAddress = z.object({
   target: z.number(),
   unit: z.number(),
 });
+export const usbAddress = z.object({
+  type: z.literal('usb'),
+  bus: z.number(),
+  port: z.number(),
+});
 //export const address = pciAddress.or(driveAddress);
-export const address = z.union([pciAddress.partial(), driveAddress.partial()]);
+export const address = z.union([
+  pciAddress.partial(),
+  driveAddress.partial(),
+  usbAddress.partial(),
+]);
 export type Address = z.infer<typeof address>;
 
 export function addressFromXml(mutXmlData: unknown) {
@@ -67,6 +76,16 @@ export function addressFromXml(mutXmlData: unknown) {
         delete mutXmlData['@unit'];
       }
     }
+    if (result.type == 'usb') {
+      if ('@bus' in mutXmlData) {
+        result.bus = +(mutXmlData['@bus'] as any);
+        delete mutXmlData['@bus'];
+      }
+      if ('@port' in mutXmlData) {
+        result.port = +(mutXmlData['@port'] as any);
+        delete mutXmlData['@port'];
+      }
+    }
   }
   return result;
 }
@@ -86,6 +105,10 @@ export function addressToXml(address: Address, mutXmlData: any = null) {
     if (address.bus) mutXmlData['@bus'] = address.bus;
     if (address.target) mutXmlData['@target'] = address.target;
     if (address.unit) mutXmlData['@unit'] = address.unit;
+  } else if (address.type === 'usb') {
+    if (address.type) mutXmlData['@type'] = address.type;
+    if (address.bus) mutXmlData['@bus'] = address.bus;
+    if (address.port) mutXmlData['@port'] = address.port;
   }
   return mutXmlData;
 }
