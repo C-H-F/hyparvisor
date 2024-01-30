@@ -9,15 +9,19 @@ import {
   Disc,
   Eraser,
   HardDrive,
+  KeyboardIcon,
   MemoryStick,
   Monitor,
   MoreVertical,
+  MouseIcon,
   NetworkIcon,
   PauseIcon,
   PlayIcon,
   PlusCircle,
   Save,
+  ServerCogIcon,
   SquareIcon,
+  TabletIcon,
 } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -37,6 +41,7 @@ import {
 } from '@/components/shadcn/ui/dropdown-menu';
 import { selectFile } from '@/components/file-selector';
 import { cn } from '@/lib/shadcn-utils';
+import { GamepadIcon } from 'lucide-react';
 
 type OperatingSystem = Awaited<
   ReturnType<typeof client.vm.listOperatingSystems.query>
@@ -400,6 +405,31 @@ export default function ShowVm() {
                       key = `network@${device.macAddress}`;
                       text = `${device.macAddress} -> ${device.sourceNetwork} ${device.alias}`;
                       icon = <NetworkIcon />;
+                    }
+                    if (device.deviceType === 'input') {
+                      key = `input@?`;
+                      text = `${device.bus} ${device.inputDevice}`;
+                      if (device.alias) text = device.alias + ': ' + text;
+                      switch (device.inputDevice) {
+                        case 'keyboard':
+                          icon = <KeyboardIcon />;
+                          break;
+                        case 'mouse':
+                          icon = <MouseIcon />;
+                          break;
+                        case 'tablet':
+                          icon = <TabletIcon />;
+                          break;
+                        case 'passthrough':
+                          icon = <GamepadIcon />;
+                          break;
+                        case 'evdev':
+                          icon = <ServerCogIcon />;
+                          break;
+                        default:
+                          icon = <Component />;
+                          break;
+                      }
                     }
                     return (
                       <SortableList.Item

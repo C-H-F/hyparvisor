@@ -10,7 +10,6 @@ export default defineConfig({
     proxy: {
       '/api/shell': 'ws://10.0.2.207:3000/',
       '/api': 'http://10.0.2.207:3000/',
-      //'/ssh': 'ws://localhost:8080/ssh',
       '^/websockify/.*': {
         target: 'ws://10.0.2.207:3000/',
         changeOrigin: true,
@@ -28,5 +27,6 @@ export default defineConfig({
   },
   build: {
     outDir: '_dist',
+    sourcemap: 'inline',
   },
 });
