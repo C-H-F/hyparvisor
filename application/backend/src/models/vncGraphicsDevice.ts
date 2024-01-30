@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isEmptyObject } from '../utils.js';
 
 export const vncGraphicsDevice = z.object({
   deviceType: z.literal('graphics'),
@@ -7,8 +8,10 @@ export const vncGraphicsDevice = z.object({
   passwd: z.string().optional(),
   websocket: z.number().optional(),
   autoport: z.boolean().optional(),
-  listen: z.string().optional(),
   keymap: z.string().optional(),
+  listen: z.string().optional(),
+  listenType: z.string().optional(),
+  listenAddress: z.string().optional(),
 });
 export type VncGraphicsDevice = z.infer<typeof vncGraphicsDevice>;
 
@@ -48,6 +51,21 @@ export function vncGraphicsFromXmlData(mutXmlData: unknown): VncGraphicsDevice {
     result.keymap = mutXmlData['@keymap'] + '';
     delete mutXmlData['@keymap'];
   }
+  if (
+    'listen' in mutXmlData &&
+    mutXmlData.listen &&
+    typeof mutXmlData.listen === 'object'
+  ) {
+    if ('@type' in mutXmlData.listen) {
+      result.listenType = mutXmlData.listen['@type'] + '';
+      delete mutXmlData.listen['@type'];
+    }
+    if ('@address' in mutXmlData.listen) {
+      result.listenAddress = mutXmlData.listen['@address'] + '';
+      delete mutXmlData.listen['@address'];
+    }
+    if (isEmptyObject(mutXmlData.listen)) delete mutXmlData.listen;
+  }
   return result;
 }
 
@@ -60,5 +78,12 @@ export function vncGraphicsToXml(graphics: Partial<VncGraphicsDevice>) {
   if (graphics.websocket != null) result['@websocket'] = graphics.websocket;
   if (graphics.listen != null) result['@listen'] = graphics.listen;
   if (graphics.keymap != null) result['@keymap'] = graphics.keymap;
+  if (graphics.listenType != null || graphics.listenAddress != null) {
+    result.listen = {};
+    if (graphics.listenType != null)
+      result.listen['@type'] = graphics.listenType;
+    if (graphics.listenAddress != null)
+      result.listen['@address'] = graphics.listenAddress;
+  }
   return result;
 }
