@@ -4,7 +4,7 @@ import { exec, execSync } from 'child_process';
 import { fetchUserFromSession } from '../trpcUtils.js';
 import { promisify } from 'util';
 import { TRPCError } from '@trpc/server';
-import pty from 'node-pty';
+import * as pty from '../botchUpPty.js';
 import { getOsShell } from '../utils.js';
 const execAsync = promisify(exec);
 
@@ -162,7 +162,7 @@ export const systemRouter = trpc.router({
         name: 'xterm-256color',
         cols: 80,
         rows: 30,
-        encoding: 'utf8',
+        encoding: 'utf-8',
       });
       ptyProcess.write('screen -D -R -S hyparvisor_update\n');
       ptyProcess.write(

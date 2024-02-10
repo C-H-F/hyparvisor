@@ -6,11 +6,10 @@
     "sourceMap": true,
     "outDir": "_dist",
     "declaration": true,
-    "strict": true
+    "strict": true,
+    "lib": ["ESNext"],
+    "types": ["bun-types"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"],
-  "ts-node": {
-    "esm": true
-  }
+  "exclude": ["node_modules"]
 }

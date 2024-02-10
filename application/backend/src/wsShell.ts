@@ -1,8 +1,7 @@
-//import { spawn } from 'child_process';
 import { nanoid } from 'nanoid';
 import { WebSocketServer } from 'ws';
-import pty from 'node-pty';
 import { getOsShell } from './utils.js';
+import * as pty from './botchUpPty.js';
 
 export function createWebsocketShell(url: string) {
   const websocketServer = new WebSocketServer({ noServer: true });

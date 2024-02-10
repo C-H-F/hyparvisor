@@ -1,5 +1,5 @@
-import os from 'os';
-import internal from 'stream';
+import { platform } from 'os';
+import type { Duplex } from 'stream';
 export function isEmptyObject(obj: any) {
   return (
     obj &&
@@ -9,10 +9,10 @@ export function isEmptyObject(obj: any) {
 }
 
 export function getOsShell() {
-  return os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+  return platform() === 'win32' ? 'powershell.exe' : '/bin/bash';
 }
 
-export function closeSocketWithError(socket: internal.Duplex, content: string) {
+export function closeSocketWithError(socket: Duplex, content: string) {
   socket.write('HTTP/1.1 400 Bad Request\r\n');
   socket.write('Content-Type: text/plain\r\n');
   socket.write(`Content-Length: ${Buffer.byteLength(content)}\r\n`);

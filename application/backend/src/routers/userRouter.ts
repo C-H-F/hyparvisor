@@ -5,7 +5,6 @@ import { users, sessions, keyValues, systemUsers } from '../database/schema.js';
 import { eq } from 'drizzle-orm/expressions.js';
 import { nanoid } from 'nanoid';
 
-import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import z from 'zod';
 
@@ -63,7 +62,11 @@ export const userRouter = trpc.router({
         .all()[0];
       if (
         !user ||
-        !(await argon2.verify(user.password, 'login:' + input.password))
+        !(await Bun.password.verify(
+          'login:' + input.password,
+          user.password,
+          'argon2id'
+        ))
       )
         throw new TRPCError({
           message: 'Invalid username or password',
@@ -86,12 +89,12 @@ export const userRouter = trpc.router({
         });
       const sessionTimeout = await getSessionTimeout();
       if (input.newPassword != null) {
-        changePassword(
-          user.id,
-          input.password,
-          input.newPassword,
-          input.passwordExpiration
-        );
+        // TODO: changePassword(
+        //   user.id,
+        //   input.password,
+        //   input.newPassword,
+        //   input.passwordExpiration
+        // );
       }
       const sessionStart = new Date();
       const sessionEnd = new Date(+sessionStart + sessionTimeout);
@@ -118,7 +121,7 @@ export const userRouter = trpc.router({
       },
     })
     .input(z.void())
-    .output(z.number())
+    .output(z.void())
     .mutation(async function ({ ctx }) {
       if (!ctx.session) throw new TRPCError({ code: 'UNAUTHORIZED' });
       await fetchUserFromSession(ctx.session);
@@ -127,7 +130,6 @@ export const userRouter = trpc.router({
         .set({ end: new Date() })
         .where(eq(sessions.id, ctx.session))
         .run();
-      return res.changes;
     }),
   extend: trpc.procedure
     .meta({
@@ -152,7 +154,6 @@ export const userRouter = trpc.router({
         .set({ end })
         .where(eq(sessions.id, ctx.session))
         .run();
-      if (res.changes != 1) return null;
       return end;
     }),
   getName: trpc.procedure
@@ -184,62 +185,6 @@ export const userRouter = trpc.router({
     }),
 });
 
-async function decodeSystemUserPassword(
-  passwordHash: string,
-  salt: string,
-  password: string
-) {
-  const [_, _alg, version, args, b64salt] = salt.split('$');
-  const parts = args.split(',');
-  const v = +version.substring(2);
-  const m = +parts
-    .filter((x) => x.startsWith('m='))
-    .map((x) => x.substring(2))[0];
-  const t = +parts
-    .filter((x) => x.startsWith('t='))
-    .map((x) => x.substring(2))[0];
-  const p = +parts
-    .filter((x) => x.startsWith('p='))
-    .map((x) => x.substring(2))[0];
-
-  argon2.hash('', {});
-
-  const key = await argon2.hash('system-user:' + passwordHash, {
-    type: argon2.argon2id,
-    version: v,
-    memoryCost: m,
-    timeCost: t,
-    parallelism: p,
-
-    salt: Buffer.from(b64salt, 'base64'),
-  });
-  console.log('decodekey=', key);
-  return decryptSymmetric(password, key);
-}
-async function encodeSystemUserPassword(
-  passwordHash: string,
-  plainPassword: string
-) {
-  console.log(
-    'Encoding SystemUserPassword "' +
-      passwordHash +
-      '", "' +
-      plainPassword +
-      '"'
-  );
-  const key = await argon2.hash('system-user:' + passwordHash, {
-    type: argon2.argon2id,
-  });
-  console.log('KEY: "' + key + '"');
-  const pos = key.lastIndexOf('$');
-  const salt = key.substring(0, pos);
-  const encodedPassword = encryptSymmetric(plainPassword, key);
-  console.log('RESULT: "' + encodedPassword + '"; ' + salt);
-  return {
-    salt,
-    password: encodedPassword,
-  };
-}
 function encryptSymmetric(
   plain: string,
   password: string,
@@ -298,57 +243,4 @@ function decryptSymmetric(
     decipher.update(data, 'base64'),
     decipher.final(),
   ]).toString(encoding);
-}
-
-async function changePassword(
-  userId: number,
-  oldPassword: string,
-  newPassword: string,
-  optPasswordExpiration?: Date
-) {
-  const newLoginPasswordHash = await argon2.hash('login:' + newPassword, {
-    type: argon2.argon2id,
-  });
-  const passwordExpiration = optPasswordExpiration
-    ? new Date(optPasswordExpiration)
-    : null;
-  const systemUser = db
-    .select()
-    .from(systemUsers)
-    .where(eq(systemUsers.user, userId))
-    .get();
-  let newSystemUserPassword = '';
-  let newSystemUserSalt = '';
-  if (systemUser) {
-    const systemUserPassword = await decodeSystemUserPassword(
-      oldPassword,
-      systemUser.salt,
-      systemUser.password
-    );
-    const { salt, password } = await encodeSystemUserPassword(
-      newPassword,
-      systemUserPassword
-    );
-    newSystemUserPassword = password;
-    newSystemUserSalt = salt;
-  }
-  db.transaction((tx) => {
-    tx.update(users)
-      .set({
-        password: newLoginPasswordHash,
-        passwordExpiration,
-      })
-      .where(eq(users.id, userId))
-      .run();
-    if (systemUser) {
-      tx.update(systemUsers)
-        .set({
-          password: newSystemUserPassword,
-          salt: newSystemUserSalt,
-        })
-        .where(eq(systemUsers.user, systemUser.user))
-        .run();
-    }
-    // db.update(systemUsers).set({''})
-  });
 }
