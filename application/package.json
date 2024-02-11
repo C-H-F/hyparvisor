@@ -2,18 +2,26 @@
   "name": "hyparvisor",
   "version": "0.0.1",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
-    "clean": "rimraf _dist",
-    "build": "npm run build --workspaces",
-    "deploy": "npm run clean && npm run build && npm run join && ncp ./backend/_dist ./_distr && ncp ./frontend/_dist ./_distr/_htdocs"
+    "install:frontend": "npm install --prefix ./frontend",
+    "install:backend": "cd ./backend && ~/.bun/bin/bun install && cd ..",
+    "postinstall": "run-s install:*",
+    "ci:frontend": "npm ci --prefix ./frontend",
+    "ci:backend": "cd ./backend && ~/.bun/bin/bun install --frozen-lockfile && cd ..",
+    "postci": "run-s ci:*",
+    "clean:frontend": "npm run clean --prefix ./frontend",
+    "clean:backend": "cd ./backend && ~/.bun/bin/bun run clean && cd ..",
+    "clean:application": "rimraf _dist",
+    "clean": "run-s clean:*",
+    "build:frontend": "npm run build --prefix ./frontend",
+    "build:backend": "npm run build --prefix ./backend",
+    "build": "run-s build:*",
+    "deploy": "npm run clean && npm run build && npx ncp ./backend/_dist ./_dist && npx ncp ./frontend/_dist ./_dist/_htdocs"
   },
   "author": "C-H-F",
   "license": "AGPL-3.0",
   "devDependencies": {
+    "npm-run-all": "^4.1.5",
     "ncp": "^2.0.0",
     "rimraf": "^5.0.5"
   }

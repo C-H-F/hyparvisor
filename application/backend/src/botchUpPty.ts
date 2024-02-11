@@ -2,8 +2,6 @@
 // node-pty which does not work on bun.
 // It requires the unbuffer command from the expect package to work.
 
-import { SpawnOptions } from 'bun';
-
 export function spawn(
   shell: string,
   args: [],
@@ -29,12 +27,10 @@ export function spawn(
   subprocess.stdin.write(`stty cols ${+cols}\n`);
   subprocess.stdin.write(`stty rows ${+rows}\n`);
   subprocess.stdin.write(`stty echo\n`);
-  let callback: ((data: string) => void) | null = null;
   return {
     cols,
     rows,
     onData: async (cb: (data: string) => void) => {
-      callback = cb;
       const reader = subprocess.stdout.getReader();
       while (true) {
         const { done, value: byteValue } = await reader.read();

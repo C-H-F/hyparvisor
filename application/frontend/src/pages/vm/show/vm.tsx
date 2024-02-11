@@ -52,7 +52,7 @@ async function getDefaultPath() {
 }
 
 export default function ShowVm() {
-  let screenshotInterval: NodeJS.Timeout;
+  let screenshotInterval: ReturnType<typeof setInterval>;
   const { id } = useParams();
   const [info, setInfo] = useState<VmInfo | null>(null);
   const [definition, setDefinition] = useState<VmDefinition | null>(null);

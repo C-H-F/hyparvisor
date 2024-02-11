@@ -1,10 +1,6 @@
 import { trpc } from '../trpc.js';
-
-import { users, sessions, keyValues, systemUsers } from '../database/schema.js';
-
+import { users, sessions, keyValues } from '../database/schema.js';
 import { nanoid } from 'nanoid';
-
-import * as crypto from 'crypto';
 import z from 'zod';
 
 import { db } from '../database/drizzle.js';
@@ -125,8 +121,7 @@ export const userRouter = trpc.router({
     .mutation(async function ({ ctx }) {
       if (!ctx.session) throw new TRPCError({ code: 'UNAUTHORIZED' });
       await fetchUserFromSession(ctx.session);
-      const res = db
-        .update(sessions)
+      db.update(sessions)
         .set({ end: new Date() })
         .where(eq(sessions.id, ctx.session))
         .run();
@@ -149,8 +144,7 @@ export const userRouter = trpc.router({
       const sessionTimeout = await getSessionTimeout();
       const now = new Date();
       const end = new Date(+now + sessionTimeout);
-      const res = db
-        .update(sessions)
+      db.update(sessions)
         .set({ end })
         .where(eq(sessions.id, ctx.session))
         .run();
@@ -184,63 +178,3 @@ export const userRouter = trpc.router({
       }
     }),
 });
-
-function encryptSymmetric(
-  plain: string,
-  password: string,
-  encoding: crypto.Encoding = 'utf8'
-): string {
-  const salt = crypto.randomBytes(16);
-  const key = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
-  const iv = crypto.randomBytes(8);
-  const algorithm = 'aes-256-gcm';
-  const cipher = crypto.createCipheriv(algorithm, key, iv, {
-    authTagLength: 4,
-  });
-
-  let encryptedBuffer = Buffer.concat([
-    cipher.update(plain, encoding),
-    cipher.final(),
-  ]);
-
-  return (
-    '$' +
-    algorithm +
-    '$s=' +
-    salt.toString('base64') +
-    ',i=' +
-    iv.toString('base64') +
-    ',a=' +
-    cipher.getAuthTag().toString('base64') +
-    '$' +
-    encryptedBuffer.toString('base64')
-  );
-}
-function decryptSymmetric(
-  cipher: string,
-  password: string,
-  encoding: crypto.Encoding = 'utf8'
-): string {
-  const [_, algorithm, parameterString, data] = cipher.split('$');
-  const params = parameterString.split(',');
-  const salt = params.find((p) => p.startsWith('s='))?.substring(2) ?? '';
-  const iv = params.find((p) => p.startsWith('i='))?.substring(2) ?? '';
-  const auth = params.find((p) => p.startsWith('a='))?.substring(2) ?? '';
-  const key = crypto.pbkdf2Sync(
-    Buffer.from(password, encoding),
-    Buffer.from(salt, 'base64'),
-    100000,
-    32,
-    'sha256'
-  );
-  const decipher = crypto.createDecipheriv(
-    algorithm,
-    key,
-    Buffer.from(iv, 'base64')
-  );
-  (decipher as any).setAuthTag(Buffer.from(auth, 'base64'));
-  return Buffer.concat([
-    decipher.update(data, 'base64'),
-    decipher.final(),
-  ]).toString(encoding);
-}
