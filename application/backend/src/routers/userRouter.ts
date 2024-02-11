@@ -2,7 +2,6 @@ import { trpc } from '../trpc.js';
 
 import { users, sessions, keyValues, systemUsers } from '../database/schema.js';
 
-import { eq } from 'drizzle-orm/expressions.js';
 import { nanoid } from 'nanoid';
 
 import * as crypto from 'crypto';
@@ -11,6 +10,7 @@ import z from 'zod';
 import { db } from '../database/drizzle.js';
 import { fetchUserFromSession } from '../trpcUtils.js';
 import { TRPCError } from '@trpc/server';
+import { eq } from 'drizzle-orm';
 
 async function getSessionTimeout() {
   const sessionTimeout = +(
