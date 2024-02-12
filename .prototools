@@ -1,0 +1,7 @@
+act = "0.2.59"
+bun = "1.0.26"
+node = "20.11.0"
+npm = "10.4.0"
+
+[plugins]
+act = "source:https://raw.githubusercontent.com/theomessin/proto-toml-plugins/master/act.toml"

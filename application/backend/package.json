@@ -6,9 +6,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "~/.bun/bin/bun ./src/server.ts",
-    "dev": "~/.bun/bin/bun --watch ./src/server.ts",
-    "build": "~/.bun/bin/bun build --target bun --sourcemap=inline --minify src/server.ts --outfile _dist/hyparvisor.js",
+    "start": "bun ./src/server.ts",
+    "dev": "bun --watch ./src/server.ts",
+    "build": "bun build --target bun --sourcemap=inline --minify src/server.ts --outfile _dist/hyparvisor.js",
     "clean": "rimraf ./_dist",
     "gen-sql": "drizzle-kit generate:sqlite --schema=./src/database/schema.ts --out=./_drizzle"
   },
