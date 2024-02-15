@@ -101,7 +101,7 @@ export const systemRouter = trpc.router({
       const repositories = ['core', 'extra'] as const;
       for (const repository of repositories)
         try {
-          const { stdout: response, stderr } = await execAsync(
+          const { stdout: response } = await execAsync(
             'paclist ' + JSON.stringify(repository),
             {
               encoding: 'utf8',
@@ -116,7 +116,7 @@ export const systemRouter = trpc.router({
         } catch {}
 
       try {
-        const { stdout: response, stderr } = await execAsync('checkupdates', {
+        const { stdout: response } = await execAsync('checkupdates', {
           encoding: 'utf8',
         });
         const regex = /(.*)\s([^\s]+)\s->\s([^\s\n]+)$/gm;

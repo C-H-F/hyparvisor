@@ -53,7 +53,7 @@ export default function License() {
         Tux:{' '}
         <a
           href="https://commons.wikimedia.org/wiki/File:Tux.svg"
-          carget="_blank"
+          target="_blank"
           className="text-blue-500 dark:text-blue-800"
         >
           lewing@isc.tamu.edu Larry Ewing and The GIMP
