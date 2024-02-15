@@ -27,9 +27,6 @@ jobs:
       - run: 'echo "bun = "1.0.26"" >> application/_dist/.prototools'
       - name: 'Bundle'
         run: 'tar -czf "hyparvisor.tar.gz" -C application/_dist .'
-      - uses: 'rickstaa/action-create-tag@v1'
-        with:
-          tag: '${{ github.event.release.name }}'
       - name: 'Upload to GitHub release'
         uses: 'xresloader/upload-to-github-release@v1'
         with:
