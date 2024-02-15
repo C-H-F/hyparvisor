@@ -26,10 +26,10 @@ jobs:
       - run: 'echo "bun = "1.0.26"" >> application/_dist/.prototools'
       - name: 'Bundle'
         run: 'tar -czf "hyparvisor.tar.gz" -C application/_dist .'
-      - name: 'Upload to GitHub release'
-        uses: 'xresloader/upload-to-github-release@v1'
-        with:
-          file: 'hyparvisor.tar.gz'
-          prerelease: true
-          draft: false
-          tag_name: 'release_${{ github.ref_name }}'
+      - name: 'Release'
+        run: >-
+          gh release create ${{ github.ref_name }}
+          "hyparvisor.tar.gz"
+          --generate-notes
+          --title "Version ${{ github.ref_name }}"
+       
