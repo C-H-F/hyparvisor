@@ -32,5 +32,4 @@ jobs:
           file: 'hyparvisor.tar.gz'
           prerelease: true
           draft: false
-          tags: true
-
+          tag_name: 'release_${{ github.ref_name }}'
