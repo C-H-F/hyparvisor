@@ -3,9 +3,8 @@
 name: Deploy
 
 on:
-  release:
-    types:
-      - published
+  push:
+    tags: v[0-9]+.[0-9]+.[0-9]+*
 
 jobs:
   ci:
@@ -31,4 +30,6 @@ jobs:
         uses: 'xresloader/upload-to-github-release@v1'
         with:
           file: 'hyparvisor.tar.gz'
+          prerelease: true
           draft: false
+
