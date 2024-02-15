@@ -1,27 +1,37 @@
 #act -P ubuntu-latest=catthehacker/ubuntu:act-latest -j ci
 
-on:
-  push:
-    tags: v[0-9]+.[0-9]+.[0-9]+*
+name: Deploy
 
-name: deploy
+on:
+  release:
+    types:
+      - published
+
 jobs:
   ci:
     name: 'CI'
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: 'actions/checkout@v4'
-      - uses: 'actions/setup-node@v3'
-      - uses: 'moonrepo/setup-toolchain@v0'
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4'
+      - name: 'Setup Node'
+        uses: 'actions/setup-node@v4'
+      - name: 'Setup proto'
+        uses: 'moonrepo/setup-toolchain@v0'
         with:
           auto-install: true
-      - run: 'echo "tag_name=$(git describe --tags --exact-match)" >> "$GITHUB_ENV"'
-      - run: 'cd application && npm ci'
-      - run: 'cd application && npm run deploy'
+      - name: 'CI'
+        run: 'cd application && npm ci'
+      - name: 'Build'
+        run: 'cd application && npm run deploy'
       - run: 'echo "bun = "1.0.26"" >> application/_dist/.prototools'
-      - run: 'tar -czf "hyparvisor.tar.gz" -C application/_dist .'
-      #- run: 'ls -lah .'
-      - uses: 'actions/upload-artifact@v4'
+      - name: 'Bundle'
+        run: 'tar -czf "hyparvisor.tar.gz" -C application/_dist .'
+      - uses: 'rickstaa/action-create-tag@v1'
         with:
-          name: 'Hyparvisor_${tag_name}'
-          path: './hyparvisor.tar.gz'
+          tag: '${{ github.event.release.name }}'
+      - name: 'Upload to GitHub release'
+        uses: 'xresloader/upload-to-github-release@v1'
+        with:
+          file: 'hyparvisor.tar.gz'
+          draft: false
