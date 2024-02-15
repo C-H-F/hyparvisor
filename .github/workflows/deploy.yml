@@ -32,4 +32,5 @@ jobs:
           file: 'hyparvisor.tar.gz'
           prerelease: true
           draft: false
+          tags: true
 
