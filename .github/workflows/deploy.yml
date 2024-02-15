@@ -19,9 +19,9 @@ jobs:
       - run: 'cd application && npm ci'
       - run: 'cd application && npm run deploy'
       - run: 'echo "bun = "1.0.26"" >> application/_dist/.prototools'
-      - run: 'tar -czf "hyparvisor_${tag_name}.tar.gz" -C application/_dist .'
+      - run: 'tar -czf "hyparvisor.tar.gz" -C application/_dist .'
       #- run: 'ls -lah .'
       - uses: 'actions/upload-artifact@v4'
         with:
           name: 'Hyparvisor_${tag_name}'
-          path: './hyparvisor_${tag_name}.tar.gz'
+          path: './hyparvisor.tar.gz'
