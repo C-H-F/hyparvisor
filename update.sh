@@ -11,12 +11,12 @@ else
   version="0.0.0"
 fi
 
-update="$(curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/release/scripts/update/version)"
+update="$(curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/master/scripts/update/version)"
 if [[ $version == $update ]]; then
   echo "System is up to date: $version"
   exit 0
 fi
 
 echo "Updating $version to version $update..."
-curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/release/scripts/update/v$version.sh | bash -s
+curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/master/scripts/update/v$version.sh | bash -s
 echo "Update finished."

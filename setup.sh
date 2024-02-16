@@ -93,7 +93,7 @@ escDisk=$( echo "$disk" | sed -e "s/\//\\\\\//g" )
 sed -i "s/dev\/sda3/${escDisk}1/g" /mnt/boot/syslinux/syslinux.cfg
 
 mkdir /mnt/opt/hyparvisor
-curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/release/update.sh >  /mnt/opt/hyparvisor/update.sh
+curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/master/update.sh >  /mnt/opt/hyparvisor/update.sh
 chmod +x /mnt/opt/hyparvisor/update.sh
 
 reboot

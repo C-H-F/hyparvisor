@@ -23,7 +23,7 @@ jobs:
         run: 'cd application && npm ci'
       - name: 'Build'
         run: 'cd application && npm run deploy'
-      - run: 'echo "bun = "1.0.26"" >> application/_dist/.prototools'
+      - run: 'echo "bun = \"1.0.26\"" >> application/_dist/.prototools'
       - name: 'Bundle'
         run: 'tar -czf "hyparvisor.tar.gz" -C application/_dist .'
       - name: 'Release'
