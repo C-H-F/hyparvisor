@@ -16,7 +16,7 @@
     "build:frontend": "npm run build --prefix ./frontend",
     "build:backend": "npm run build --prefix ./backend",
     "build": "run-s build:*",
-    "deploy": "npm run clean && npm run build && npx ncp ./backend/_dist ./_dist && npx ncp ./frontend/_dist ./_dist/_htdocs"
+    "deploy": "npm run clean && npm run build && npx ncp ./backend/_dist ./_dist && npx ncp ./frontend/_dist ./_dist/htdocs"
   },
   "author": "C-H-F",
   "license": "AGPL-3.0",

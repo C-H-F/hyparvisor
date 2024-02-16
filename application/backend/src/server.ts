@@ -28,9 +28,9 @@ app.use(location, swaggerUi.serve);
 app.get(location, swaggerUi.setup(openApiDocument));
 
 //Host static files from _htdocs
-app.use(express.static(path.join(__dirname, '..', '_htdocs')));
+app.use(express.static(path.join('.', 'htdocs')));
 app.use(function (_req, res, _next) {
-  res.sendFile(path.join(__dirname, '..', '_htdocs', 'index.html'));
+  res.sendFile(path.join('.', 'htdocs', 'index.html'));
 });
 
 const server = app.listen(port);
