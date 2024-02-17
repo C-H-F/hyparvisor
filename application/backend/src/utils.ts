@@ -26,7 +26,7 @@ export function closeSocketWithError(socket: Duplex, content: string) {
  * Null, undefined and invalid strings are converted to the default value.
  */
 export function toNumber(value: string | null | undefined, defaultValue = 0) {
-  let result = +defaultValue ?? defaultValue;
+  let result = +(value ?? defaultValue);
   if (Number.isNaN(result)) return defaultValue;
   return result;
 }
