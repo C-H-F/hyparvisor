@@ -1,0 +1,13 @@
+[Unit]
+Description=Hyparvisor web server
+After=network.target
+
+[Service]
+ExecStart=/opt/hyparvisor/hyparvisor.sh
+Type=exec
+Restart=always
+StandardOutput=tty
+StandardError=tty
+
+[Install]
+WantedBy=getty.target

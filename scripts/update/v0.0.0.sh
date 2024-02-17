@@ -16,6 +16,8 @@ systemctl start libvirtd
 pacman --noconfirm -S which git
 curl -fsSL https://moonrepo.dev/install/proto.sh | bash -s -- --no-profile --yes
 
+# systemctl enable sshd
+# systemctl start sshd
 
 rm -Rf /opt/hyparvisor/app
 mkdir /opt/hyparvisor/app
@@ -27,5 +29,12 @@ rm -Rf /opt/hyparvisor/tmp
 
 pushd /opt/hyparvisor/app && ~/.proto/bin/proto use && popd
 
+curl -L https://raw.githubusercontent.com/C-H-F/hyparvisor/master/scripts/update/res/v0.0.0/hyparvisor.sh --output /opt/hyparvisor/hyparvisor.sh
+chmod +x /opt/hyparvisor/hyparvisor.sh
+
+curl -L https://raw.githubusercontent.com/C-H-F/hyparvisor/master/scripts/update/res/v0.0.0/hyparvisor.service --output /etc/systemd/system/hyparvisor.service
+
+systemctl enable hyparvisor
+systemctl start hyparvisor
 
 /opt/hyparvisor/update.sh

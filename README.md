@@ -13,6 +13,9 @@ curl -Ls https://raw.githubusercontent.com/C-H-F/hyparvisor/release/setup.sh | b
 
 This installs a minimal Archlinux system on your entire drive /dev/sda using a german keyboard-layout. Just replace the drive and keyboard layout as needed.
 
+After the system reboots ensure that it boots from your hard drive.
+Call /opt/hyparvisor/update.sh to install the application.
+
 ## More
 
 - [Screenshots](./docs/screenshots/)
