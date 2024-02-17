@@ -9,10 +9,19 @@ import { createWebsocketShell } from './wsShell.js';
 import { setWebSocketShellRequestTokenFunction } from './routers/systemRouter.js';
 import { createWebsockifyWrapper } from './websockify.js';
 import path from 'path';
+import { parseArgs } from 'node:util';
+import { toNumber } from './utils.js';
 export type AppRouter = typeof appRouter;
 
+const parsedArguments = parseArgs({
+  args: process.argv,
+  options: { port: { type: 'string', short: 'p' }, htdocs: { type: 'string' } },
+  allowPositionals: true,
+});
+
+const port = toNumber(parsedArguments.values.port, 80);
+const htdocs = parsedArguments.values.htdocs ?? 'htdocs';
 const location = '/api';
-const port = 3000;
 const app = express();
 const trpcExpressOptions: Parameters<typeof createExpressMiddleware>[0] = {
   router: appRouter,
@@ -28,7 +37,7 @@ app.use(location, swaggerUi.serve);
 app.get(location, swaggerUi.setup(openApiDocument));
 
 //Host static files from _htdocs
-app.use(express.static(path.join('.', 'htdocs')));
+app.use(htdocs);
 app.use(function (_req, res, _next) {
   res.sendFile(path.join('.', 'htdocs', 'index.html'));
 });

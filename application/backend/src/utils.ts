@@ -20,3 +20,13 @@ export function closeSocketWithError(socket: Duplex, content: string) {
   socket.write(content);
   socket.destroy();
 }
+
+/**
+ * Converts a given string, null or undefined value into a number.
+ * Null, undefined and invalid strings are converted to the default value.
+ */
+export function toNumber(value: string | null | undefined, defaultValue = 0) {
+  let result = +defaultValue ?? defaultValue;
+  if (Number.isNaN(result)) return defaultValue;
+  return result;
+}
