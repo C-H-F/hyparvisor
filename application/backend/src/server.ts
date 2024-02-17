@@ -20,7 +20,7 @@ const parsedArguments = parseArgs({
 });
 
 const port = toNumber(parsedArguments.values.port, 80);
-const htdocs = parsedArguments.values.htdocs ?? 'htdocs';
+const htdocs = parsedArguments.values.htdocs ?? './htdocs';
 const location = '/api';
 const app = express();
 const trpcExpressOptions: Parameters<typeof createExpressMiddleware>[0] = {
@@ -39,7 +39,7 @@ app.get(location, swaggerUi.setup(openApiDocument));
 //Host static files from _htdocs
 app.use(htdocs);
 app.use(function (_req, res, _next) {
-  res.sendFile(path.join('.', 'htdocs', 'index.html'));
+  res.sendFile(path.join(htdocs, 'index.html'));
 });
 
 const server = app.listen(port);
