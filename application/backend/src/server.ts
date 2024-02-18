@@ -39,7 +39,7 @@ app.get(location, swaggerUi.setup(openApiDocument));
 //Host static files from _htdocs
 app.use(express.static(htdocs));
 app.use(function (_req, res, _next) {
-  res.sendFile(path.join(htdocs, 'index.html'));
+  res.sendFile(path.join(htdocs, 'index.html'), { root: '.' });
 });
 
 const server = app.listen(port);
