@@ -10,7 +10,7 @@ import { setWebSocketShellRequestTokenFunction } from './routers/systemRouter.js
 import { createWebsockifyWrapper } from './websockify.js';
 import path from 'path';
 import { parseArgs } from 'node:util';
-import { toNumber } from './utils.js';
+import { getIpAddresses, toNumber } from './utils.js';
 export type AppRouter = typeof appRouter;
 
 const parsedArguments = parseArgs({
@@ -61,4 +61,10 @@ server.on('upgrade', (request, socket, head) => {
     return;
   }
 });
-console.log('Running at http://localhost:' + port + location);
+
+console.log('Hyparvisor running at:');
+for (const ip of getIpAddresses()) {
+  console.log(
+    `  - http://${ip.indexOf(':') >= 0 ? '[' + ip + ']' : ip}:${port}/`
+  );
+}

@@ -1,4 +1,4 @@
-import { platform } from 'os';
+import { platform, networkInterfaces, NetworkInterfaceInfo } from 'os';
 import type { Duplex } from 'stream';
 export function isEmptyObject(obj: any) {
   return (
@@ -29,4 +29,16 @@ export function toNumber(value: string | null | undefined, defaultValue = 0) {
   let result = +(value ?? defaultValue);
   if (Number.isNaN(result)) return defaultValue;
   return result;
+}
+
+export function getIpAddresses(
+  filter: (nii: NetworkInterfaceInfo) => boolean = (nii) => !nii.internal
+) {
+  const interfaces = networkInterfaces();
+  const addresses: string[] = [];
+  for (const nic of Object.values(interfaces)) {
+    if (!nic) continue;
+    for (const cfg of nic) if (filter(cfg)) addresses.push(cfg.address);
+  }
+  return addresses;
 }
