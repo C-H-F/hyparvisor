@@ -3,7 +3,7 @@ Description=Hyparvisor web server
 After=network.target
 
 [Service]
-ExecStart=/opt/hyparvisor/hyparvisor.sh
+ExecStart=/bin/bash /opt/hyparvisor/hyparvisor.sh
 Type=exec
 Restart=always
 StandardOutput=tty
