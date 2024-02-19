@@ -27,6 +27,7 @@
     "vite-node": "^0.30.1"
   },
   "dependencies": {
+    "@farjs/better-sqlite3-wrapper": "^1.0.1",
     "@trpc/server": "latest",
     "@types/ws": "^8.5.4",
     "bun-types": "^1.0.25",
