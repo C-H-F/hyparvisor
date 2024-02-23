@@ -13,5 +13,7 @@ if (
     )
     .get().cnt
 ) {
-  sqlite.prepare(databaseSetup).run();
+  databaseSetup.split('--> statement-breakpoint').forEach((sql) => {
+    sqlite.prepare(sql).run();
+  });
 }

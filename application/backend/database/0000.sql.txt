@@ -42,15 +42,19 @@ INSERT INTO user (
   '$argon2id$v=19$m=65536,t=3,p=4$xw5NV5qR7nlc3Up0djHePw$/QVJu1vHU9W005SVHgwkp5bwQ34PzsU+bdIIapLyUJU',
   946681200
 );
-
+--> statement-breakpoint
 INSERT INTO key_value (
   `k`,
   `v`
 ) VALUES(
   'session_timeout',
   '86400'
+),
+(
+  'db_version',
+  '0',
 );
-
+--> statement-breakpoint
 
 INSERT INTO system_user (
   `user`,
