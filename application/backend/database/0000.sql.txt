@@ -46,13 +46,13 @@ INSERT INTO user (
 INSERT INTO key_value (
   `k`,
   `v`
-) VALUES(
+) VALUES (
   'session_timeout',
   '86400'
 ),
 (
   'db_version',
-  '0',
+  '0'
 );
 --> statement-breakpoint
 
