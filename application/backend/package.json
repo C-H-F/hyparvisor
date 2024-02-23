@@ -8,8 +8,9 @@
   "scripts": {
     "start": "bun ./src/server.ts -- -p 3000",
     "dev": "bun --watch ./src/server.ts -- -p 3000",
+    "prebuild": "npm run gen-sql && cat ./_drizzle/*.sql > ./_drizzle/sql.txt",
     "build": "bun build --target bun --sourcemap=inline --minify src/server.ts --outfile _dist/hyparvisor.js",
-    "clean": "rimraf ./_dist",
+    "clean": "rimraf ./_dist && rimraf ./_drizzle",
     "gen-sql": "drizzle-kit generate:sqlite --schema=./src/database/schema.ts --out=./_drizzle"
   },
   "author": "C-H-F",
