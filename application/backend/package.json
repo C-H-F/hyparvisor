@@ -11,7 +11,7 @@
     "prebuild": "npm run gen-sql",
     "build": "bun build --target bun --sourcemap=inline --minify src/server.ts --outfile _dist/hyparvisor.js",
     "clean": "rimraf ./_dist && rimraf ./_drizzle",
-    "gen-sql": "drizzle-kit generate:sqlite --schema=./src/database/schema.ts --out=./_drizzle && cat ./_drizzle/*.sql > ./_drizzle/sql.txt"
+    "gen-sql": "drizzle-kit generate:sqlite --schema=./src/database/schema.ts --out=./_drizzle"
   },
   "author": "C-H-F",
   "license": "AGPL-3.0",

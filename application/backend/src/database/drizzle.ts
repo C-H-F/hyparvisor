@@ -1,6 +1,6 @@
 import Database from '@farjs/better-sqlite3-wrapper';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import databaseSetup from '../../_drizzle/sql.txt';
+import databaseSetup from '../../database/0000.sql.txt';
 
 const sqlite = new Database('hyparvisor.db');
 export const db = drizzle(sqlite);
