@@ -21,6 +21,6 @@ if (
     .get().cnt
 ) {
   databaseSetup.split('--> statement-breakpoint').forEach((sql) => {
-    (sqlite as any).exec(escapeSqlQuery(sql)).run();
+    sqlite.prepare(escapeSqlQuery(sql)).run();
   });
 }

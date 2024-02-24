@@ -64,6 +64,6 @@ INSERT INTO system_user (
 ) VALUES (
   1,
   'root',
-  '$argon2id$v=19$m=65536,t=3,p=4$6ZBxCMMQiNKsIGqRZU6WmQ'
+  '$argon2id$v=19$m=65536,t=3,p=4$6ZBxCMMQiNKsIGqRZU6WmQ',
   '$aes-256-gcm$s=vo0DGoGyprUJkcQIOUWbJQ==,i=3NPUc6Gk9Uw=,a=tF4c8g==$NU5RSQ=='
 );
