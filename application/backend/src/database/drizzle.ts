@@ -5,6 +5,13 @@ import databaseSetup from '../../database/0000.sql.txt';
 const sqlite = new Database('hyparvisor.db');
 export const db = drizzle(sqlite);
 
+function escapeSqlQuery(query: string) {
+  return query
+    .replaceAll(/?/g, '\\?')
+    .replaceAll(/\:/g, '\\:')
+    .replaceAll(/\$/g, '\\$');
+}
+
 //Setup database
 if (
   !sqlite
@@ -14,6 +21,6 @@ if (
     .get().cnt
 ) {
   databaseSetup.split('--> statement-breakpoint').forEach((sql) => {
-    sqlite.prepare(sql).run();
+    (sqlite as any).exec(escapeSqlQuery(sql)).run();
   });
 }
