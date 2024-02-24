@@ -7,9 +7,10 @@
   "private": true,
   "scripts": {
     "start": "bun ./src/server.ts -- -p 3000",
-    "dev": "bun --watch ./src/server.ts -- -p 3000",
+    "dev": "bun --watch ./src/server.ts -- -p 3000 --htdocs ../frontend/_dist",
+    "prebuild": "npm run gen-sql",
     "build": "bun build --target bun --sourcemap=inline --minify src/server.ts --outfile _dist/hyparvisor.js",
-    "clean": "rimraf ./_dist",
+    "clean": "rimraf ./_dist && rimraf ./_drizzle",
     "gen-sql": "drizzle-kit generate:sqlite --schema=./src/database/schema.ts --out=./_drizzle"
   },
   "author": "C-H-F",
@@ -27,6 +28,7 @@
     "vite-node": "^0.30.1"
   },
   "dependencies": {
+    "@farjs/better-sqlite3-wrapper": "^1.0.1",
     "@trpc/server": "latest",
     "@types/ws": "^8.5.4",
     "bun-types": "^1.0.25",
