@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Lock } from 'lucide-react';
+import { User, Lock, AlarmClockIcon, KeyRoundIcon } from 'lucide-react';
 import { Button } from '@/components/shadcn/ui/button';
 import { Card } from '@/components/shadcn/ui/card';
 import { Label } from '@/components/shadcn/ui/label';
@@ -79,56 +79,73 @@ export default function Login() {
         //Require a new password.
         setRenewalRequired(true);
       } else setMessage(ms);
-
-      // } else {
-      //   console.warn('Something else ');
-      // }
     }
   }
   return (
     <>
       <div className="absolute left-0 top-0 flex h-screen w-screen items-center">
-        <Card className="m-auto w-fit">
-          <form hidden={!renewalRequired} onSubmit={preventDefault}>
-            <h2>Password expired</h2>
-            <p>
-              The password provided has to be changed. Please provide a new
-              password.
+        <Card className="relative m-auto w-fit overflow-hidden">
+          <div className="absolute -left-28 -top-6 z-0 opacity-5">
+            <AlarmClockIcon
+              className="h-64 w-64 opacity-40"
+              style={{ display: renewalRequired ? '' : 'none' }}
+            />
+            <KeyRoundIcon
+              className="ml-24 h-52 w-52 opacity-40"
+              style={{ display: renewalRequired ? 'none' : '' }}
+            />
+          </div>
+
+          <form
+            hidden={!renewalRequired}
+            onSubmit={preventDefault}
+            style={{ display: renewalRequired ? '' : 'none' }}
+            className="relative z-10 m-5"
+          >
+            <h2 className="mb-2 text-lg">Password expired!</h2>
+            <p className="py-3 text-sm">
+              The password provided has to be changed. <br />
+              Please provide a new password.
             </p>
-            <Label htmlFor="txtNewPassword1">New Password</Label>
             <Input
+              className="my-3"
               id="txtNewPassword1"
               value={newPassword1}
+              type="password"
+              placeholder="New Password"
               onChange={(e) => setNewPassword1(e.target.value)}
             />
-
-            <Label htmlFor="txtNewPassword2">Repeat</Label>
             <Input
               id="txtNewPassword2"
               value={newPassword2}
+              type="password"
+              placeholder="Repeat New Password"
               onChange={(e) => setNewPassword2(e.target.value)}
             />
-            <Button
-              type="button"
-              onClick={() => {
-                setNewPassword1('');
-                setNewPassword2('');
-                setEmail('');
-                setPassword('');
-                setRenewalRequired(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" onClick={() => changePasswordAndLogin()}>
-              Change Password and Login
-            </Button>
+            <div className="my-8 flex justify-between">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setNewPassword1('');
+                  setNewPassword2('');
+                  setEmail('');
+                  setPassword('');
+                  setRenewalRequired(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" onClick={() => changePasswordAndLogin()}>
+                Change and Login
+              </Button>
+            </div>
           </form>
-
           <form
             hidden={renewalRequired}
             onSubmit={(e) => e.preventDefault()}
-            className="grid-cols-[auto, auto] m-5 grid gap-5"
+            className="grid-cols-[auto, auto] relative z-10 m-5 grid gap-5"
+            style={{ display: renewalRequired ? 'none' : '' }}
           >
             <Label htmlFor="txtUsername" className="w-auto">
               <TooltipProvider>
@@ -174,7 +191,15 @@ export default function Login() {
               Login
             </Button>
           </form>
-          {message == '' ? '' : <Alert>{message}</Alert>}
+          {message == '' ? (
+            ''
+          ) : (
+            <div className="m-5">
+              <Alert className="text-sm" variant="destructive">
+                {message}
+              </Alert>
+            </div>
+          )}
         </Card>
       </div>
     </>

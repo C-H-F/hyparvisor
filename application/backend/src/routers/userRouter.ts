@@ -85,12 +85,12 @@ export const userRouter = trpc.router({
         });
       const sessionTimeout = await getSessionTimeout();
       if (input.newPassword != null) {
-        // TODO: changePassword(
-        //   user.id,
-        //   input.password,
-        //   input.newPassword,
-        //   input.passwordExpiration
-        // );
+        changePassword(
+          user.id,
+          input.password,
+          input.newPassword,
+          input.passwordExpiration
+        );
       }
       const sessionStart = new Date();
       const sessionEnd = new Date(+sessionStart + sessionTimeout);
@@ -178,3 +178,26 @@ export const userRouter = trpc.router({
       }
     }),
 });
+
+async function changePassword(
+  userId: number,
+  oldPassword: string,
+  newPassword: string,
+  optPasswordExpiration?: Date
+) {
+  const newLoginPasswordHash = await Bun.password.hash('login:' + newPassword, {
+    algorithm: 'argon2id',
+  });
+  const passwordExpiration = optPasswordExpiration
+    ? new Date(optPasswordExpiration)
+    : null;
+  db.transaction((tx) => {
+    tx.update(users)
+      .set({
+        password: newLoginPasswordHash,
+        passwordExpiration,
+      })
+      .where(eq(users.id, userId))
+      .run();
+  });
+}
