@@ -7,7 +7,7 @@ export const db = drizzle(sqlite);
 
 function escapeSqlQuery(query: string) {
   return query
-    .replaceAll(/?/g, '\\?')
+    .replaceAll(/\?/g, '\\?')
     .replaceAll(/\:/g, '\\:')
     .replaceAll(/\$/g, '\\$');
 }
