@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import databaseSetup from '../../database/0000.sql.txt';
 
 const sqlite = new Database('hyparvisor.db');
-export const db = drizzle(sqlite);
+export const db = drizzle(sqlite as any);
 
 //Setup database
 if (

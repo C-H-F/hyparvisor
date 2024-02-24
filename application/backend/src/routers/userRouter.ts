@@ -181,7 +181,7 @@ export const userRouter = trpc.router({
 
 async function changePassword(
   userId: number,
-  oldPassword: string,
+  _oldPassword: string,
   newPassword: string,
   optPasswordExpiration?: Date
 ) {
