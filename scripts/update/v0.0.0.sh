@@ -8,16 +8,17 @@ pacman-key --init
 pacman-key --populate
 pacman --noconfirm -Syu
 pacman --noconfirm -Rdd iptables
-pacman --noconfirm -S qemu-base libvirt iptables-nft dnsmasq dmidecode bridge-utils openbsd-netcat openssh screen curl tar
+pacman --noconfirm -S qemu-base libvirt iptables-nft dnsmasq dmidecode bridge-utils openbsd-netcat
 
 systemctl enable libvirtd
 systemctl start libvirtd
 
+# Proto
 pacman --noconfirm -S which git
 curl -fsSL https://moonrepo.dev/install/proto.sh | bash -s -- --no-profile --yes
 
-# systemctl enable sshd
-# systemctl start sshd
+# Hyparvisor
+pacman --noconfirm -S openssh screen curl tar expect
 
 rm -Rf /opt/hyparvisor/app
 mkdir /opt/hyparvisor/app
