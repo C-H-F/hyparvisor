@@ -18,7 +18,7 @@ pacman --noconfirm -S which git
 curl -fsSL https://moonrepo.dev/install/proto.sh | bash -s -- --no-profile --yes
 
 # Hyparvisor
-pacman --noconfirm -S openssh screen curl tar expect
+pacman --noconfirm -S openssh screen curl tar expect libosinfo
 
 rm -Rf /opt/hyparvisor/app
 mkdir /opt/hyparvisor/app
