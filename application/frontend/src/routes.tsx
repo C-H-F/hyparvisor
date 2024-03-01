@@ -22,6 +22,7 @@ export function getRouter() {
     { path: '/vm/show/:id', element: <ShowVm /> },
     { path: '/vm/edit/:id', element: <EditVm /> },
     { path: '/vm/xml/:id', element: <XmlVm /> },
+    { path: '/vm/create', element: <ShowVm /> },
     { path: '/network', element: <Networks /> },
   ]);
 }

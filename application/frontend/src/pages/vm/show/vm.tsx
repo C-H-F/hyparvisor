@@ -47,14 +47,16 @@ type OperatingSystem = Awaited<
   ReturnType<typeof client.vm.listOperatingSystems.query>
 >[0];
 
+type ExtendedVmInfo = VmInfo & { virtual: boolean };
+
 async function getDefaultPath() {
-  return '/home/user';
+  return '/root';
 }
 
 export default function ShowVm() {
   let screenshotInterval: ReturnType<typeof setInterval>;
-  const { id } = useParams();
-  const [info, setInfo] = useState<VmInfo | null>(null);
+  const { id: rawId } = useParams();
+  const [info, setInfo] = useState<ExtendedVmInfo | null>(null);
   const [definition, setDefinition] = useState<VmDefinition | null>(null);
   const [sourceDefinition, setSourceDefinition] = useState<VmDefinition | null>(
     null
@@ -63,17 +65,42 @@ export default function ShowVm() {
     []
   );
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const id = rawId ?? '';
   useAsyncEffect(async function () {
     const operatingSystems = await client.vm.listOperatingSystems.query();
     setOperatingSystems(operatingSystems);
   }, []);
   useAsyncEffect(async function () {
-    const name = id ?? '';
+    console.log('id', id, rawId);
+    if (!id) {
+      const definition: VmDefinition = {
+        name: 'New VM',
+        vcpuCount: 1,
+        memory: 1024 * 1024 * 1024,
+        devices: [],
+        description: '',
+        hypervisor: 'qemu',
+        id: 0,
+        title: '',
+        uuid: '',
+        osId: 'unknown',
+        osArch: 'x86_64',
+        osType: 'hvm',
+      };
+      setDefinition(definition);
+      setSourceDefinition(definition);
+      setInfo({
+        virtual: true,
+        state: 'undefined',
+      });
+      return;
+    }
+    const name = id;
     const pInfo = client.vm.getInfo.query({ name });
     const pDefinition = client.vm.getDefinition.query({ name });
     const info = await pInfo;
     const definition = await pDefinition;
-    setInfo(info);
+    setInfo({ ...info, virtual: false });
     setDefinition(definition);
     setSourceDefinition(definition);
   }, []);
@@ -86,7 +113,7 @@ export default function ShowVm() {
         if (info.state != 'running') {
           setScreenshot(null);
           clearInterval(screenshotInterval);
-          setInfo(info);
+          setInfo({ ...info, virtual: false });
           return;
         }
         const screenshot = await client.vm.screenshot.query({ name });
@@ -101,9 +128,6 @@ export default function ShowVm() {
   const definitionChanged =
     JSON.stringify(definition) !== JSON.stringify(sourceDefinition);
 
-  if (!id) {
-    return <></>;
-  }
   return (
     <StandardLayout>
       <Link to="/vm">
@@ -149,7 +173,7 @@ export default function ShowVm() {
                 setDefinition({ ...definition, osId });
               }}
             />
-            <h2 className="text-lg">{id}</h2>
+            <h2 className="text-lg">{id || definition.name}</h2>
             <span className="flex-grow">
               <span
                 className={cn(
@@ -161,87 +185,108 @@ export default function ShowVm() {
                 ({info.state})
               </span>
             </span>
-            {definitionChanged ? (
-              <>
-                <Button
-                  variant="ghost"
-                  className="reset"
-                  onClick={async () => {
-                    let value = sourceDefinition;
-                    try {
-                      value = await client.vm.getDefinition.query({
-                        name: id ?? '',
-                      });
-                      setSourceDefinition(value);
-                    } catch (_) {}
-                    setDefinition(value);
-                  }}
-                >
-                  <Eraser />
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="submit"
-                  onClick={async () => {
-                    const differences = definition; //TODO: Set differences only!
-                    await client.vm.setDefinition.mutate(differences);
-                    {
-                      const value = await client.vm.getDefinition.query({
-                        name: id ?? '',
-                      });
-                      setSourceDefinition(value);
-                      setDefinition(value);
-                    }
-                    setInfo(await client.vm.getInfo.query({ name: id }));
-                  }}
-                >
-                  <Save />
-                </Button>
-              </>
-            ) : (
-              <></>
+            {definitionChanged && id && (
+              <Button
+                variant="ghost"
+                className="reset"
+                onClick={async () => {
+                  let value = sourceDefinition;
+                  try {
+                    value = await client.vm.getDefinition.query({
+                      name: id ?? '',
+                    });
+                    setSourceDefinition(value);
+                  } catch (_) {}
+                  setDefinition(value);
+                }}
+              >
+                <Eraser />
+              </Button>
             )}
-            <Button
-              variant="ghost"
-              onClick={async () => {
-                if (info.state === 'paused')
-                  await client.vm.resume.mutate({ name: id });
-                else await client.vm.start.mutate({ name: id });
-                setInfo(await client.vm.getInfo.query({ name: id }));
-              }}
-              style={{
-                display: info.state === 'running' ? 'none' : '',
-              }}
+            {(definitionChanged || !id) && (
+              <Button
+                variant="ghost"
+                className="submit"
+                onClick={async () => {
+                  const differences = definition; //TODO: Set differences only!
+                  await client.vm.setDefinition.mutate(differences);
+
+                  if (!id) {
+                    window.location.href =
+                      '/vm/show/' + encodeURIComponent(definition.name);
+                  }
+                  {
+                    const value = await client.vm.getDefinition.query({
+                      name: id ?? '',
+                    });
+                    setSourceDefinition(value);
+                    setDefinition(value);
+                  }
+                  setInfo({
+                    ...(await client.vm.getInfo.query({ name: id })),
+                    virtual: false,
+                  });
+                }}
+              >
+                <Save />
+              </Button>
+            )}
+
+            <div
+              className="stateButtons"
+              style={{ display: info.virtual ? 'none' : '' }}
             >
-              <PlayIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={async () => {
-                await client.vm.pause.mutate({ name: id });
-                setInfo(await client.vm.getInfo.query({ name: id }));
-              }}
-              style={{
-                display:
-                  info.state === 'paused' || info.state === 'shut off'
-                    ? 'none'
-                    : '',
-              }}
-            >
-              <PauseIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={async () => {
-                await client.vm.stop.mutate({ name: id, force: true });
-                setInfo(await client.vm.getInfo.query({ name: id }));
-              }}
-              style={{
-                display: info.state === 'shut off' ? 'none' : '',
-              }}
-            >
-              <SquareIcon />
-            </Button>
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  if (info.state === 'paused')
+                    await client.vm.resume.mutate({ name: id });
+                  else await client.vm.start.mutate({ name: id });
+                  setInfo({
+                    ...(await client.vm.getInfo.query({ name: id })),
+                    virtual: false,
+                  });
+                }}
+                style={{
+                  display: info.state === 'running' ? 'none' : '',
+                }}
+              >
+                <PlayIcon />
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  await client.vm.pause.mutate({ name: id });
+                  setInfo({
+                    ...(await client.vm.getInfo.query({ name: id })),
+                    virtual: false,
+                  });
+                }}
+                style={{
+                  display:
+                    info.state === 'paused' || info.state === 'shut off'
+                      ? 'none'
+                      : '',
+                }}
+              >
+                <PauseIcon />
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  await client.vm.stop.mutate({ name: id, force: true });
+                  setInfo({
+                    ...(await client.vm.getInfo.query({ name: id })),
+                    virtual: false,
+                  });
+                }}
+                style={{
+                  display: info.state === 'shut off' ? 'none' : '',
+                }}
+              >
+                <SquareIcon />
+              </Button>
+            </div>
           </div>
           <div className="masonry">
             <div className="inline-flex flex-col items-stretch gap-3">
