@@ -3,15 +3,16 @@ import react from '@vitejs/plugin-react';
 import postcssConfig from './postcss.config.js';
 
 // https://vitejs.dev/config/
+const backend = '10.0.0.1:3000';
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5175,
     proxy: {
-      '/api/shell': 'ws://10.0.2.207:3000/',
-      '/api': 'http://10.0.2.207:3000/',
+      '/api/shell': `ws://${backend}/`,
+      '/api': `http://${backend}/`,
       '^/websockify/.*': {
-        target: 'ws://10.0.2.207:3000/',
+        target: `ws://${backend}/`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/websockify/, '/websockify/'),
       },
