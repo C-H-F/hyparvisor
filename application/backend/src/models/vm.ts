@@ -23,6 +23,19 @@ export const vmDefinition = z.object({
   vcpuCount: z.number(),
   devices: device.array(),
   osId: z.string().optional().nullable(),
+  osType: z
+    .union([
+      z.literal('hvm'),
+      z.literal('linux'),
+      z.literal('xenphv'),
+      z.literal('exe'),
+    ])
+    .optional()
+    .nullable(),
+  osArch: z
+    .union([z.literal('x86_64'), z.literal('i686')])
+    .optional()
+    .nullable(),
   _raw: z.unknown(),
 });
 export type VmDefinition = z.infer<typeof vmDefinition>;
@@ -82,6 +95,29 @@ export function vmDefinitionFromXml(mutXmlData: any) {
     _raw: tmp,
   };
 
+  if (tmp.os && typeof tmp.os === 'object') {
+    if (tmp.os.type && typeof tmp.os.type === 'object') {
+      if (tmp.os.type['#text']) {
+        try {
+          result.osType = vmDefinition.shape.osType.parse(tmp.os.type['#text']);
+          delete tmp.os.type['#text'];
+        } catch {
+          //Unknown os type. Just ignore it.
+        }
+      }
+      if (tmp.os.type['@arch']) {
+        try {
+          result.osArch = vmDefinition.shape.osArch.parse(tmp.os.type['@arch']);
+          delete tmp.os.type['@arch'];
+        } catch {
+          //Unknown os type. Just ignore it.
+        }
+      }
+      if (isEmptyObject(tmp.os.type)) delete tmp.os.type;
+    }
+    if (isEmptyObject(tmp.os)) delete tmp.os;
+  }
+
   return result;
 }
 export function vmDefinitionToXml(mutDefinition: Partial<VmDefinition>) {
@@ -126,6 +162,12 @@ export function vmDefinitionToXml(mutDefinition: Partial<VmDefinition>) {
       definition.osId;
     result['metadata']['libosinfo:libosinfo']['@xmlns:libosinfo'] =
       'http://libosinfo.org/xmlns/libvirt/domain/1.0';
+  }
+  if (definition.osType != null) {
+    if (result.os == null) result.os = {};
+    if (result.os.type == null) result.os.type = {};
+    if (definition.osType) result.os.type['#text'] = definition.osType;
+    if (definition.osArch) result.os.type['@arch'] = definition.osArch;
   }
   if (definition.devices) pushDevicesToXml(definition.devices, result);
   return result;
