@@ -5,7 +5,13 @@ import { useAsyncEffect } from '@/lib/react-utils';
 import { cn } from '@/lib/shadcn-utils';
 import { VmDefinition, VmList } from '@/models';
 import { client } from '@/trpc-client';
-import { AlertTriangleIcon, Edit, Play, Square } from 'lucide-react';
+import {
+  AlertTriangleIcon,
+  Edit,
+  Play,
+  Square,
+  Trash2Icon,
+} from 'lucide-react';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -17,29 +23,7 @@ export default function Vm() {
     {}
   );
   const [selection, setSelection] = useState<string[]>([]);
-  const singleSelection = selection.length == 1;
-  useAsyncEffect(async () => {
-    const vms = await client.vm.list.query();
-    setVirtualMachines(vms);
-
-    const defs = await Promise.all(
-      vms.map(async (vm) => {
-        return {
-          key: vm.name,
-          value: await client.vm.getDefinition.query({ name: vm.name }),
-        };
-      })
-    );
-    setDefinitions(
-      defs.reduce(
-        (prev, curr) => {
-          prev[curr.key] = curr.value;
-          return prev;
-        },
-        {} as typeof definitions
-      )
-    );
-  }, []);
+  useAsyncEffect(loadVirtualMachines, []);
   return (
     <StandardLayout>
       <Link to="create" className="absolute top-24">
@@ -91,8 +75,8 @@ export default function Vm() {
                         warning
                           ? 'text-yellow-400'
                           : online
-                          ? 'text-green-500'
-                          : ''
+                            ? 'text-green-500'
+                            : ''
                       )}
                     >
                       {' '}
@@ -160,25 +144,91 @@ export default function Vm() {
         </tbody>
       </table>
 
-      <Link
-        aria-disabled={!singleSelection}
-        style={{ display: singleSelection ? '' : 'none' }}
-        to={singleSelection ? '/vm/edit/' + selection[0] : ''}
-      >
-        <Button>
-          <Edit className="mr-2 h-4 w-4" /> Edit {selection[0]}
-        </Button>
-      </Link>
-      <Button>
-        <Play className="mr-2 h-4 w-4" /> Start
-      </Button>
-      <Button>
-        <Square className="mr-2 h-4 w-4" /> Stop
-      </Button>
-      <Button variant="destructive">
-        <Edit className="mr-2 h-4 w-4" /> Delete
-      </Button>
+      {selection.length >= 1 && (
+        <div className="flex flex-wrap gap-2">
+          <Link
+            aria-disabled={selection.length !== 1}
+            style={{ display: selection.length === 1 ? '' : 'none' }}
+            to={selection.length === 1 ? '/vm/show/' + selection[0] : ''}
+          >
+            <Button>Show "{selection[0]}"</Button>
+          </Link>
+          <Button
+            onClick={async () => {
+              await Promise.allSettled(
+                selection.map(async (name) => {
+                  await client.vm.start.mutate({ name });
+                })
+              );
+              await loadVirtualMachines();
+            }}
+          >
+            <Play className="mr-2 h-4 w-4" /> Start
+          </Button>
+          <Button
+            onClick={async () => {
+              await Promise.allSettled(
+                selection.map(async (name) => {
+                  await client.vm.stop.mutate({ name, force: true });
+                })
+              );
+              await loadVirtualMachines();
+            }}
+          >
+            <Square className="mr-2 h-4 w-4" /> Stop
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={async () => {
+              if (
+                selection.length === 1 &&
+                !confirm(
+                  `Do you really want to delete the virtual machine "${selection[0]}"?`
+                )
+              )
+                return;
+              if (
+                selection.length > 1 &&
+                !confirm(
+                  `Do you really want to delete these ${+selection.length} virtual machines?\n${selection.map((name) => ` - ${name}`).join('\n')}`
+                )
+              )
+                return;
+              await Promise.allSettled(
+                selection.map(async (name) => {
+                  await client.vm.remove.mutate({ name });
+                })
+              );
+              await loadVirtualMachines();
+            }}
+          >
+            <Trash2Icon className="mr-2 h-4 w-4" /> Delete
+          </Button>
+        </div>
+      )}
     </StandardLayout>
   );
-  // existing code
+
+  async function loadVirtualMachines() {
+    const vms = await client.vm.list.query();
+    setVirtualMachines(vms);
+
+    const defs = await Promise.all(
+      vms.map(async (vm) => {
+        return {
+          key: vm.name,
+          value: await client.vm.getDefinition.query({ name: vm.name }),
+        };
+      })
+    );
+    setDefinitions(
+      defs.reduce(
+        (prev, curr) => {
+          prev[curr.key] = curr.value;
+          return prev;
+        },
+        {} as typeof definitions
+      )
+    );
+  }
 }
