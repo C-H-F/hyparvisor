@@ -7,6 +7,7 @@ import {
   Component,
   Cpu,
   Disc,
+  Edit2Icon,
   Eraser,
   HardDrive,
   KeyboardIcon,
@@ -42,6 +43,7 @@ import {
 import { selectFile } from '@/components/file-selector';
 import { cn } from '@/lib/shadcn-utils';
 import { GamepadIcon } from 'lucide-react';
+import { Input } from '@/components/shadcn/ui/input';
 
 type OperatingSystem = Awaited<
   ReturnType<typeof client.vm.listOperatingSystems.query>
@@ -65,6 +67,7 @@ export default function ShowVm() {
     []
   );
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [editName, setEditName] = useState(false);
   const id = rawId ?? '';
   useAsyncEffect(async function () {
     const operatingSystems = await client.vm.listOperatingSystems.query();
@@ -173,18 +176,43 @@ export default function ShowVm() {
                 setDefinition({ ...definition, osId });
               }}
             />
-            <h2 className="text-lg">{id || definition.name}</h2>
-            <span className="flex-grow">
-              <span
-                className={cn(
-                  'text-xs',
-                  info.state === 'running' && 'text-green-500',
-                  info.state === 'shut off' && 'text-red-500'
+            <div className="flex flex-col">
+              <div className="flex flex-row items-center">
+                {editName ? (
+                  <Input
+                    className="w-56"
+                    value={definition.name}
+                    onChange={(evt) => {
+                      setDefinition({ ...definition, name: evt.target.value });
+                    }}
+                  />
+                ) : (
+                  <h2 className="mt-3 text-lg">{definition.name}</h2>
                 )}
-              >
-                ({info.state})
-              </span>
-            </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    setEditName(!editName);
+                  }}
+                  className="p-2 opacity-50"
+                >
+                  <Edit2Icon className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="-mt-2">
+                <span
+                  className={cn(
+                    'text-xs',
+                    info.state === 'running' && 'text-green-500',
+                    info.state === 'shut off' && 'text-red-500'
+                  )}
+                >
+                  ({info.state})
+                </span>
+              </div>
+            </div>
+            <span className="flex-grow"></span>
             {definitionChanged && id && (
               <Button
                 variant="ghost"
@@ -209,9 +237,19 @@ export default function ShowVm() {
                 className="submit"
                 onClick={async () => {
                   const differences = definition; //TODO: Set differences only!
+                  if (
+                    id &&
+                    sourceDefinition &&
+                    definition.name !== sourceDefinition.name
+                  ) {
+                    await client.vm.rename.mutate({
+                      oldName: sourceDefinition.name,
+                      newName: definition.name,
+                    });
+                  }
                   await client.vm.setDefinition.mutate(differences);
 
-                  if (!id) {
+                  if (!id || sourceDefinition?.name !== definition.name) {
                     window.location.href =
                       '/vm/show/' + encodeURIComponent(definition.name);
                   }
