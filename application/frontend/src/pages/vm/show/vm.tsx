@@ -80,7 +80,29 @@ export default function ShowVm() {
         name: 'New VM',
         vcpuCount: 1,
         memory: 1024 * 1024 * 1024,
-        devices: [],
+        devices: [
+          {
+            deviceType: 'input',
+            inputDevice: 'mouse',
+            bus: 'ps2',
+          },
+          {
+            deviceType: 'input',
+            inputDevice: 'keyboard',
+            bus: 'ps2',
+          },
+          {
+            deviceType: 'input',
+            inputDevice: 'tablet',
+            bus: 'usb',
+          },
+          {
+            deviceType: 'graphics',
+            graphicsDevice: 'vnc',
+            port: -1,
+            autoport: true,
+          },
+        ],
         description: '',
         hypervisor: 'qemu',
         id: 0,
