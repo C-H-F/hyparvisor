@@ -156,6 +156,27 @@ export const vmRouter = trpc.router({
         'virsh undefine --domain ' + escapeShellArgument(input.name)
       );
     }),
+  rename: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'POST',
+        path: '/vm/rename',
+        tags: ['vm'],
+        summary: 'Renames a virtual machine.',
+        protect: true,
+      },
+    })
+    .input(z.object({ oldName: z.string(), newName: z.string() }))
+    .output(z.void())
+    .mutation(async function ({ input, ctx }) {
+      await fetchUserFromSession(ctx.session);
+      await execAsync(
+        'virsh domrename ' +
+          escapeShellArgument(input.oldName) +
+          ' ' +
+          escapeShellArgument(input.newName)
+      );
+    }),
   getInfo: trpc.procedure
     .meta({
       openapi: {
