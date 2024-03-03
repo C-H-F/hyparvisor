@@ -44,12 +44,11 @@ export function createWebsockifyWrapper(args: { rootPath: string }) {
         return;
       }
       const containername = 'hyparvisor.websockify.' + nanoid();
+      const websockifyInnerPort = 80;
       const dockerProcess = exec(
         `docker run --name ${JSON.stringify(
           containername
-        )} --env HOST=${JSON.stringify(
-          '172.17.0.1' //This is the docker host IP in the default network configuration. TODO: Determine the correct IP dynamically.
-        )} --rm -p 127.0.0.1:0:80 --entrypoint sh jwnmulder/websockify -c 'python -m websockify 80 $HOST:${+serverPort}'`,
+        )} --add-host=host.docker.internal:host-gateway --rm -p 127.0.0.1:0:${+websockifyInnerPort} --entrypoint bash jwnmulder/websockify:0.11.0 -c 'python -m websockify ${+websockifyInnerPort} host.docker.internal:${+serverPort}'`,
         { encoding: 'utf8' }
       );
 
@@ -64,7 +63,11 @@ export function createWebsockifyWrapper(args: { rootPath: string }) {
               'name=' + containername
             )}`
           );
-          const ans = /(127\.0\.0\.1|0\.0\.0\.0):(\d+)->80\/tcp/g.exec(stdout);
+          const portRegex = new RegExp(
+            `(127\\.0\\.0\\.1|0\\.0\\.0\\.0):(\\d+)->${+websockifyInnerPort}/tcp`,
+            'g'
+          );
+          const ans = portRegex.exec(stdout);
           if (!ans) {
             await new Promise((cb) => setTimeout(cb, 1000));
             continue;
@@ -90,8 +93,7 @@ export function createWebsockifyWrapper(args: { rootPath: string }) {
         socket,
         head,
         async function (wsClient) {
-          const websockify = new WebSocket('ws://localhost:' + websockifyPort);
-
+          const websockify = new WebSocket('ws://127.0.0.1:' + websockifyPort);
           await new Promise((cb) => {
             websockify.onopen = cb;
             websockify.onerror = cb;
