@@ -101,6 +101,8 @@ export default function ShowVm() {
             graphicsDevice: 'vnc',
             port: -1,
             autoport: true,
+            listenAddress: '0.0.0.0',
+            listenType: 'address',
           },
         ],
         description: '',
