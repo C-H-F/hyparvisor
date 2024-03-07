@@ -5,7 +5,8 @@ import { fetchUserFromSession } from '../trpcUtils.js';
 import { promisify } from 'util';
 import { TRPCError } from '@trpc/server';
 import * as pty from '../botchUpPty.js';
-import { getOsShell } from '../utils.js';
+import { getOsShell, mapObject, toNumber } from '../utils.js';
+import bytes from 'bytes-iec';
 const execAsync = promisify(exec);
 
 let webSocketShellRequestToken: ((timeoutMs: number) => string) | null = null;
@@ -257,5 +258,77 @@ export const systemRouter = trpc.router({
         });
       const token = webSocketShellRequestToken(5 * 60 * 1000);
       return '/api/shell/' + encodeURIComponent(token);
+    }),
+  getCpuUsage: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/system/getCpuUsage',
+        tags: ['system'],
+        summary: 'Returns the CPU usage in percent.',
+      },
+    })
+    .input(z.void())
+    .output(
+      z.object({
+        usage: z.number().nullable(),
+        user: z.number().nullable(),
+        system: z.number().nullable(),
+        idle: z.number().nullable(),
+        iowait: z.number().nullable(),
+      })
+    )
+    .query(async function () {
+      const { stdout } = await execAsync('virsh nodecpustats --percent', {
+        encoding: 'utf8',
+      });
+      return {
+        usage: toNumber(/usage\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1], null),
+        user: toNumber(/user\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1], null),
+        system: toNumber(
+          /system\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1],
+          null
+        ),
+        idle: toNumber(/idle\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1], null),
+        iowait: toNumber(
+          /iowait\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1],
+          null
+        ),
+      };
+    }),
+  getMemoryUsage: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/system/getMemoryUsage',
+        tags: ['system'],
+        summary: 'Returns the memory usage',
+      },
+    })
+    .input(z.void())
+    .output(
+      z.object({
+        total: z.number().nullable(),
+        free: z.number().nullable(),
+        buffers: z.number().nullable(),
+        cached: z.number().nullable(),
+      })
+    )
+    .query(async function () {
+      const { stdout } = await execAsync('virsh nodememstats', {
+        encoding: 'utf8',
+      });
+      const matches = {
+        total: /total\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
+        free: /free\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
+        buffers: /buffers\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
+        cached: /cached\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
+      };
+
+      return mapObject(matches, (key, value) => {
+        const amount = toNumber(value?.[1], null);
+        if (amount === null) return [key, null];
+        return [key, bytes.parse(amount + (value?.[2] ?? 'b'))];
+      });
     }),
 });
