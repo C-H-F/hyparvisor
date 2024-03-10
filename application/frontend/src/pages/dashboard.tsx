@@ -1,8 +1,7 @@
 import StandardLayout from '@/components/layout/standard-layout';
 import { useAsyncEffect } from '@/lib/react-utils';
 import { client } from '@/trpc-client';
-import { useEffect, useRef, useState } from 'react';
-import * as echarts from 'echarts';
+import { useState } from 'react';
 import { EChart } from '@/components/echarts/echart';
 import { Card } from '@/components/shadcn/ui/card';
 import { Gauge } from '@/components/echarts/gauge';

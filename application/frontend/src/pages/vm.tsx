@@ -5,13 +5,7 @@ import { useAsyncEffect } from '@/lib/react-utils';
 import { cn } from '@/lib/shadcn-utils';
 import { VmDefinition, VmList } from '@/models';
 import { client } from '@/trpc-client';
-import {
-  AlertTriangleIcon,
-  Edit,
-  Play,
-  Square,
-  Trash2Icon,
-} from 'lucide-react';
+import { AlertTriangleIcon, Play, Square, Trash2Icon } from 'lucide-react';
 import { ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
