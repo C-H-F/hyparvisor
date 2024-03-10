@@ -283,15 +283,18 @@ export const systemRouter = trpc.router({
         encoding: 'utf8',
       });
       return {
-        usage: toNumber(/usage\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1], null),
-        user: toNumber(/user\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1], null),
-        system: toNumber(
-          /system\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1],
+        usage: toNumber(
+          /usage\s*:\s*(\d+(?:\.\d*)?)%/g.exec(stdout)?.[1],
           null
         ),
-        idle: toNumber(/idle\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1], null),
+        user: toNumber(/user\s*:\s*(\d+(?:\.\d*)?)%/g.exec(stdout)?.[1], null),
+        system: toNumber(
+          /system\s*:\s*(\d+(?:\.\d*)?)%/g.exec(stdout)?.[1],
+          null
+        ),
+        idle: toNumber(/idle\s*:\s*(\d+(?:\.\d*)?)%/g.exec(stdout)?.[1], null),
         iowait: toNumber(
-          /iowait\s*:\s*(\d+(?:\.\d*))%/g.exec(stdout)?.[1],
+          /iowait\s*:\s*(\d+(?:\.\d*)?)%/g.exec(stdout)?.[1],
           null
         ),
       };
@@ -319,12 +322,11 @@ export const systemRouter = trpc.router({
         encoding: 'utf8',
       });
       const matches = {
-        total: /total\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
-        free: /free\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
-        buffers: /buffers\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
-        cached: /cached\s*:\s*(\d+(?:\.\d*))\s*(\w*)/g.exec(stdout),
+        total: /total\s*:\s*(\d+(?:\.\d*)?)\s*(\w*)/g.exec(stdout),
+        free: /free\s*:\s*(\d+(?:\.\d*)?)\s*(\w*)/g.exec(stdout),
+        buffers: /buffers\s*:\s*(\d+(?:\.\d*)?)\s*(\w*)/g.exec(stdout),
+        cached: /cached\s*:\s*(\d+(?:\.\d*)?)\s*(\w*)/g.exec(stdout),
       };
-
       return mapObject(matches, (key, value) => {
         const amount = toNumber(value?.[1], null);
         if (amount === null) return [key, null];
