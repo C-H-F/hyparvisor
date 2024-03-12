@@ -11,7 +11,7 @@ export async function ls(path: string) {
     if (!result || result.length != 3) return;
     const filename = result[1];
     const size = result[2];
-    x.name = filename;
+    x.alias = filename;
     x.targetSize = +size;
   });
   return entries;

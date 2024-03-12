@@ -32,6 +32,7 @@ type FsType = 'dir' | 'file';
 export type FsEntry = {
   type: string;
   name: string;
+  alias?: string | null;
   user: number;
   group: number;
   size: number;
@@ -302,7 +303,7 @@ export default function FileBrowser(props: {
                         ''
                       )}
 
-                      <span className="name">{entry.name}</span>
+                      <span className="name">{entry.alias ?? entry.name}</span>
 
                       <span className="permissions">{entry.permissions}</span>
                       <span className="type">{entry.type}</span>
@@ -329,7 +330,7 @@ export default function FileBrowser(props: {
                             !props.rm ||
                             !confirm(
                               'Are you sure you want to delete ' +
-                                entry.name +
+                                (entry.alias ?? entry.name) +
                                 '?'
                             )
                           )
@@ -396,7 +397,9 @@ export default function FileBrowser(props: {
             ) : (
               ''
             )}
+            <div className="flex-grow">&nbsp;</div>
           </div>
+          <div>&nbsp;</div>
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem
