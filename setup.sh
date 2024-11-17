@@ -73,6 +73,7 @@ echo "$hostname" >> /mnt/etc/hostname
 echo "#!/bin/bash
 locale-gen
 pacman --noconfirm -S syslinux gptfdisk
+cp -r /usr/lib/syslinux/* /boot/syslinux/
 syslinux-install_update -i -a -m
 passwd -d root
 systemctl enable dhcpcd
