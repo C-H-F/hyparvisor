@@ -75,7 +75,8 @@ if [ "$disk" != "" ]; then
   echo "Formatting disk $disk"
   if [ "$efi" = true ]; then
     parted -s "${disk}" "mklabel" "gpt" "mkpart" "EFI" "fat32" "1MiB" "1025MiB" "set 1 esp on" "mkpart" "system" "ext4" "1025MiB" "100%"
-    mkfs.msdos -F 32 "${disk}2"
+    mkfs.msdos -F 32 "${disk}1"
+    mkfs.ext4 -qF "${disk}2"
     mount "${disk}2" "/mnt"
   else
     parted -s "$disk" "mklabel" "gpt" "mkpart" "system" "ext4" "1MiB" "100%"
@@ -110,11 +111,11 @@ systemctl enable dhcpcd
 
 " > /mnt/root/setup.sh
 
-if [ "$efi" = true]; then
+if [ "$efi" = true ]; then
   echo "
   mount \"${disk}1\" /boot
   mkdir -p /boot/EFI/syslinux
-  pacman --noconfirm -S linux
+  pacman --noconfirm -S linux efibootmgr
   cp -r /usr/lib/syslinux/efi64/* /boot/EFI/syslinux
   cp /usr/share/syslinux/syslinux.cfg /boot/EFI/syslinux/syslinux.cfg
   efibootmgr --create --disk \"${disk}\" --part 1 --loader /EFI/syslinux/syslinux.efi --label \"Syslinux\" --unicode
