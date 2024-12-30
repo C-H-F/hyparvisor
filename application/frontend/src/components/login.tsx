@@ -12,7 +12,6 @@ import {
   TooltipTrigger,
 } from '@/components/shadcn/ui/tooltip';
 
-import { sha512 } from '@/lib/crypto';
 import { useSession } from '@/context/appContext';
 import { client } from '@/trpc-client';
 import { createPasswordHash } from '@/lib/app-utils';

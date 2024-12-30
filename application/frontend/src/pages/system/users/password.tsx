@@ -2,7 +2,6 @@ import StandardLayout from '@/components/layout/standard-layout';
 import { Button } from '@/components/shadcn/ui/button';
 import { Card } from '@/components/shadcn/ui/card';
 import { Input } from '@/components/shadcn/ui/input';
-import { Label } from '@/components/shadcn/ui/label';
 import { Switch } from '@/components/shadcn/ui/switch';
 import { createPasswordHash } from '@/lib/app-utils';
 import { cn } from '@/lib/shadcn-utils';
@@ -55,12 +54,11 @@ export function Password() {
           <Button
             className="relative"
             disabled={!!msg || changingPassword}
-            onClick={async (evt) => {
+            onClick={async (_) => {
               try {
                 setChangingPassword(true);
                 if (repeatNewPassword !== newPassword) return;
-
-                const res = await client.user.login.mutate({
+                await client.user.login.mutate({
                   email: username,
                   password: await createPasswordHash(username, oldPassword),
                   newPassword: await createPasswordHash(username, newPassword),

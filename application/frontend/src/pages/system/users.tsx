@@ -9,6 +9,7 @@ import { AccountDetails, makeDefaultAccountDetails } from '@/models';
 import {
   expandPermissions,
   parsePermissions,
+  SubPermission,
   zRootPermission,
   zSubPermission,
 } from '@/permissions';
@@ -88,7 +89,7 @@ export function Users() {
         <Card className="p-3">
           <h3>Permissions</h3>
           <ul className="my-3 columns-3">
-            {zSubPermission.options.map((permission) => (
+            {zSubPermission.options.map((permission: SubPermission) => (
               <li>
                 {permissions ? (
                   permissions.includes(permission) ? (

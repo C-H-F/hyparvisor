@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AsPrefixedConstArray, constPrefix } from './lib/const-utils';
+import { AsPrefixedConstArray } from './lib/const-utils';
 import { mapObjectValues } from '../../common/src/utils';
 
 const zPermissionGroup = z.object({
