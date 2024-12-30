@@ -5,7 +5,8 @@ import { fetchUserFromSession } from '../trpcUtils.js';
 import { promisify } from 'util';
 import { TRPCError } from '@trpc/server';
 import * as pty from '../botchUpPty.js';
-import { getOsShell, mapObject, toNumber } from '../utils.js';
+import { getOsShell, toNumber } from '../utils.js';
+import { mapObject } from '../../../common/src/utils.js';
 import bytes from 'bytes-iec';
 const execAsync = promisify(exec);
 

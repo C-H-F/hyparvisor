@@ -18,3 +18,53 @@ Call `/opt/hyparvisor/update.sh` to install the application. (A permanent intern
 ## More
 
 - [Screenshots](./docs/screenshots/)
+
+## Building
+
+This repository manages all its tools via proto. Proto ensures that the correct version of every tool is used in order to bild the application.
+
+**Installing proto on Debian Linux and derivatives:**
+
+The required versions of node, npm, bun, act can simply be installed using [proto](https://moonrepo.dev/docs/proto/install).
+
+```
+sudo apt install git unzip gzip xz-utils
+curl -fsSL https://moonrepo.dev/install/proto.sh | bash
+```
+
+For _building the backend_ you also need:
+
+```
+sudo apt install build-essential make python3
+```
+
+**Checking out the source:**
+
+```
+git clone https://github.com/C-H-F/hyparvisor.git
+```
+
+**Install dependencies:**
+
+```
+cd hyparvisor
+proto use
+```
+
+**Building the frontend:**
+
+```
+cd application/frontend
+bun install --frozen-lockfile
+npm run build
+cd ../..
+```
+
+**Building the backend:**
+
+```
+cd application/backend
+bun install --frozen-lockfile
+npm run build
+cd ../..
+```

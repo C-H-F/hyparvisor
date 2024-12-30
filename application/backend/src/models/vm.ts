@@ -172,3 +172,5 @@ export function vmDefinitionToXml(mutDefinition: Partial<VmDefinition>) {
   if (definition.devices) pushDevicesToXml(definition.devices, result);
   return result;
 }
+
+export const vmState = z.enum(['undefined', 'shut off', 'running', 'paused']);

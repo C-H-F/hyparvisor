@@ -1,8 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { trpc } from '../trpc.js';
 import { string, z } from 'zod';
-import { promisify } from 'util';
-import { exec } from 'child_process';
 import { fetchUserFromSession } from '../trpcUtils.js';
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 import bytes from 'bytes-iec';
@@ -12,17 +10,19 @@ import {
   vmDefinition,
   vmDefinitionFromXml,
   vmDefinitionToXml,
+  vmState,
 } from '../models/vm.js';
-const execAsync = promisify(exec);
-
-const vmState = z.enum(['undefined', 'shut off', 'running', 'paused']);
-
-const instance = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  state: vmState,
-});
-type Instance = z.infer<typeof instance>;
+import { hrtime } from 'node:process';
+import {
+  execAsync,
+  instance,
+  listAllVirtualMachines,
+  parseTable,
+} from '../virshManager.js';
+import { db } from '../database/drizzle.js';
+import { domainActions } from '../database/schema.js';
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import { convert } from '../utils.js';
 
 const vmInformation = z.object({
   id: z.number(),
@@ -40,7 +40,16 @@ const vmInformation = z.object({
   securityDoi: z.string(),
 });
 
+const getMetricsResult = z.record(
+  z.string(),
+  z.object({
+    state: vmState,
+    stateSince: z.number(),
+  })
+);
+
 export const vmRouter = trpc.router({
+  //#region start
   start: trpc.procedure
     .meta({
       openapi: {
@@ -57,6 +66,8 @@ export const vmRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       await execAsync('virsh start ' + escapeShellArgument(input.name));
     }),
+  //#endregion
+  //#region stop
   stop: trpc.procedure
     .meta({
       openapi: {
@@ -79,6 +90,8 @@ export const vmRouter = trpc.router({
           escapeShellArgument(input.name)
       );
     }),
+  //#endregion
+  //#region pause
   pause: trpc.procedure
     .meta({
       openapi: {
@@ -95,6 +108,8 @@ export const vmRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       await execAsync('virsh suspend ' + escapeShellArgument(input.name));
     }),
+  //#endregion
+  //#region resume
   resume: trpc.procedure
     .meta({
       openapi: {
@@ -111,6 +126,8 @@ export const vmRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       await execAsync('virsh resume ' + escapeShellArgument(input.name));
     }),
+  //#endregion
+  //#region list
   list: trpc.procedure
     .meta({
       openapi: {
@@ -125,19 +142,10 @@ export const vmRouter = trpc.router({
     .output(instance.array())
     .query(async function ({ ctx }) {
       await fetchUserFromSession(ctx.session);
-      const { stdout } = await execAsync('virsh list --all', {
-        encoding: 'utf8',
-      });
-      const result = [] as Instance[];
-      const table = parseTable(stdout);
-      for (const row of table)
-        result.push({
-          id: row['Id'],
-          name: row['Name'],
-          state: vmState.catch('undefined').parse(row['State']),
-        });
-      return result;
+      return await listAllVirtualMachines();
     }),
+  //#endregion
+  //#region remove
   remove: trpc.procedure
     .meta({
       openapi: {
@@ -156,6 +164,8 @@ export const vmRouter = trpc.router({
         'virsh undefine --domain ' + escapeShellArgument(input.name)
       );
     }),
+  //#endregion
+  //#region rename
   rename: trpc.procedure
     .meta({
       openapi: {
@@ -177,6 +187,8 @@ export const vmRouter = trpc.router({
           escapeShellArgument(input.newName)
       );
     }),
+  //#endregion
+  //#region getInfo
   getInfo: trpc.procedure
     .meta({
       openapi: {
@@ -233,6 +245,8 @@ export const vmRouter = trpc.router({
         securityDoi,
       };
     }),
+  //#endregion
+  //#region getXml
   getXml: trpc.procedure
     .meta({
       openapi: {
@@ -249,6 +263,8 @@ export const vmRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       return await getDomainXml(input.name);
     }),
+  //#endregion
+  //#region setXml
   setXml: trpc.procedure
     .meta({
       openapi: {
@@ -276,6 +292,8 @@ export const vmRouter = trpc.router({
 
       await setDomainXml(input.xml);
     }),
+  //#endregion
+  //#region getDefinition
   getDefinition: trpc.procedure
     .meta({
       openapi: {
@@ -299,6 +317,8 @@ export const vmRouter = trpc.router({
       const parsedXml = parser.parse(xml).domain;
       return vmDefinitionFromXml(parsedXml);
     }),
+  //#endregion
+  //#region setDefinition
   setDefinition: trpc.procedure
     .meta({
       openapi: {
@@ -325,6 +345,8 @@ export const vmRouter = trpc.router({
       //  message: 'Not implemented!',
       //});
     }),
+  //#endregion
+  //#region listOperatingSystems
   listOperatingSystems: trpc.procedure
     .meta({
       openapi: {
@@ -372,6 +394,8 @@ export const vmRouter = trpc.router({
         });
       return result;
     }),
+  //#endregion
+  //#region screenshot
   screenshot: trpc.procedure
     .meta({
       openapi: {
@@ -394,6 +418,8 @@ export const vmRouter = trpc.router({
         return 'data:image/png;base64,' + content.toString('base64');
       });
     }),
+  //#endregion
+  //#region getNetworks
   getNetworks: trpc.procedure
     .meta({
       openapi: {
@@ -445,6 +471,122 @@ export const vmRouter = trpc.router({
       });
       return await Promise.all(result);
     }),
+  //#endregion
+  //#region getStats
+  getStats: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/vm/getStats',
+        tags: ['vm'],
+        summary: 'Gets statistics about the virtual machine.',
+        protect: true,
+      },
+    })
+    .input(z.object({ name: z.string() }))
+    .output(
+      z.object({
+        cpu: z.object({
+          cpu: z.number(),
+          user: z.number(),
+          system: z.number(),
+        }),
+        memory: z.object({
+          actual: z.number().nullable(),
+          swapIn: z.number().nullable(),
+          swapOut: z.number().nullable(),
+          majorFault: z.number().nullable(),
+          minorFault: z.number().nullable(),
+          unused: z.number().nullable(),
+          available: z.number().nullable(),
+          usable: z.number().nullable(),
+          lastUpdate: z.number().nullable(),
+          diskCaches: z.number().nullable(),
+          hugetlbPgalloc: z.number().nullable(),
+          hugetlbpgfail: z.number().nullable(),
+          rss: z.number().nullable(),
+        }),
+      })
+    )
+    .query(async function ({ input, ctx }) {
+      await fetchUserFromSession(ctx.session);
+      const memStat = await readMemStat(input.name);
+      const cpuStat = await readCpuUsage(input.name);
+      return {
+        memory: {
+          actual: memStat.actual ?? null,
+          swapIn: memStat.swap_in ?? null,
+          swapOut: memStat.swap_out ?? null,
+          majorFault: memStat.major_fault ?? null,
+          minorFault: memStat.minor_fault ?? null,
+          unused: memStat.unused ?? null,
+          available: memStat.available ?? null,
+          usable: memStat.usable ?? null,
+          lastUpdate: memStat.last_update ?? null,
+          diskCaches: memStat.disk_caches ?? null,
+          hugetlbPgalloc: memStat.hugetlb_pgalloc ?? null,
+          hugetlbpgfail: memStat.hugetlb_pgfail ?? null,
+          rss: memStat.rss ?? null,
+        },
+        cpu: {
+          cpu: cpuStat.cpu ?? null,
+          user: cpuStat.user ?? null,
+          system: cpuStat.system ?? null,
+        },
+      };
+    }),
+  //#endregion
+  //#region getMetrics
+  getMetrics: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/vm/getMetrics',
+        tags: ['vm'],
+        summary: 'Gets the actions of the virtual machine.',
+        protect: true,
+      },
+    })
+    .input(
+      z.object({
+        names: z.string().optional(),
+        name: z.string().optional(),
+        _cpuHistory: z.number().optional(),
+        _memoryHistory: z.number().optional(),
+      })
+    )
+    .output(getMetricsResult)
+    .query(async function ({ input, ctx }) {
+      await fetchUserFromSession(ctx.session);
+      const names = convert(
+        input.names,
+        (x) => z.string().array().parse(JSON.parse(x!)),
+        (x) => x !== '' && x !== null && x !== undefined
+      ) ?? [input.name ?? ''];
+      const result = {} as z.infer<typeof getMetricsResult>;
+      for (const name of names) {
+        const lastStateAction = db
+          .select()
+          .from(domainActions)
+          .where(
+            and(
+              eq(domainActions.domain, name),
+              inArray(domainActions.action, ['shut off', 'running', 'paused'])
+            )
+          )
+          .orderBy(desc(domainActions.timestamp))
+          .limit(1)
+          .all()?.[0];
+        result[name] = {
+          state: vmState.parse(lastStateAction?.action ?? 'undefined'),
+          stateSince: lastStateAction?.timestamp?.getTime() ?? 0,
+        };
+        //TODO: Get CPU usage for the requested time period.
+        //TODO: get Memory usage for the requested time period.
+      }
+      return result;
+    }),
+  //#endregion getMetrics
 });
 
 async function getDomainXml(vm: string) {
@@ -473,47 +615,104 @@ function escapeShellArgument(str: string) {
   return result;
 }
 
-function parseTable(
-  text: string,
-  separator: RegExp = /\s\s+/g
-): Record<string, string>[] {
-  const lines = text.split('\n');
-  const result: Record<string, string>[] = [];
-  const columns: { title: string; pos: number }[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.trim().length == 0) continue;
-    if (i == 0) {
-      //Header line determine positions
-      let title = '';
+async function readMemStat(domain: string) {
+  const { stdout } = await execAsync(
+    'virsh dommemstat ' + escapeShellArgument(domain)
+  );
+  const result: Record<string, number> = {};
+  const regex = /(\w+) ([0-9\.]+)/gm;
+  let regexRes: RegExpExecArray | null;
+  while ((regexRes = regex.exec(stdout))) result[regexRes[1]] = +regexRes[2];
+  return result;
+}
+async function readCpuStat(domain: string) {
+  const { stdout } = await execAsync(
+    'virsh cpu-stats ' + escapeShellArgument(domain) + ' --total'
+  );
+  const time = hrtime.bigint();
+  const result: Record<string, number | bigint> = { time };
+  let regexRes: RegExpExecArray | null;
+  const regex = /\s*(\w+)\s+([0-9\.]+) seconds/gm;
+  while ((regexRes = regex.exec(stdout))) result[regexRes[1]] = +regexRes[2];
+  return result;
+}
 
-      //for (let j = 0; j < line.length; j++) {
-      while (true) {
-        let startPos = separator.lastIndex;
-        const regexRes = separator.exec(line);
-        title = line.substring(startPos, regexRes?.index ?? line.length).trim();
-        if (title.length > 0) columns.push({ title, pos: startPos });
+async function getVcpuCount(domain: string) {
+  const { stdout } = await execAsync(
+    'virsh vcpucount ' + escapeShellArgument(domain)
+  );
+  const result = {
+    maxLive: null as number | null,
+    currentLive: null as number | null,
+    maxConfig: null as number | null,
+    currentConfig: null as number | null,
+  };
 
-        if (!regexRes || regexRes.length <= 0) break;
-        const endPos = regexRes.index + regexRes[0].length;
-
-        separator.lastIndex = endPos;
-      }
-      continue;
-    }
-    if (i == 1) {
-      //Separator line. Nothing to do here.
-      continue;
-    }
-    const resultRow: Record<string, string> = {};
-    for (let j = 0; j < columns.length; j++) {
-      const column = columns[j];
-      const endPos = j + 1 < columns.length ? columns[j + 1].pos : line.length;
-      const value = line.substring(column.pos, endPos);
-
-      resultRow[column.title] = value.replaceAll(separator, '').trim();
-    }
-    result.push(resultRow);
+  const regex = /\s*(max(?:imum)?|current)\s+(config|live)\s+(\d+)/gm;
+  let regexRes: RegExpExecArray | null;
+  while ((regexRes = regex.exec(stdout))) {
+    if (regexRes[1].startsWith('max') && regexRes[2] == 'config')
+      result['maxConfig'] = +regexRes[3];
+    else if (regexRes[1].startsWith('max') && regexRes[2] == 'live')
+      result['maxLive'] = +regexRes[3];
+    else if (regexRes[1] == 'current' && regexRes[2] == 'config')
+      result['currentConfig'] = +regexRes[3];
+    else if (regexRes[1] == 'current' && regexRes[2] == 'live')
+      result['currentLive'] = +regexRes[3];
   }
+  return result;
+}
+async function getHostCpuCount() {
+  const { stdout } = await execAsync('lscpu');
+  const result = {
+    sockets: 0,
+    cores: 0,
+    threads: 0,
+  };
+  const regex = /^\s*([a-zA-Z0-9_ ()\-]+):\s+(\d+)$/gm;
+  let regexRes: RegExpExecArray | null;
+  while ((regexRes = regex.exec(stdout))) {
+    const key = regexRes[1].toLowerCase();
+    const value = +regexRes[2];
+    if (key == 'socket(s)') result.sockets = value;
+    else if (key == 'core(s) per socket') result.cores = value;
+    else if (key == 'thread(s) per core') result.threads = value;
+  }
+  return result;
+}
+
+async function readCpuUsage(domain: string) {
+  //NOTE: vCpuCount is actually not required anymore.
+  const vCpuCount = (await getVcpuCount(domain)).currentLive ?? 0;
+  if (!vCpuCount) return { total: 0, user: 0, system: 0 };
+
+  const v1 = await readCpuStat(domain);
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const v2 = await readCpuStat(domain);
+
+  const distance =
+    Number((v2.time as bigint) - (v1.time as bigint)) / 1000000000;
+
+  const hostCpuCountResult = await getHostCpuCount();
+  const hostCpuCount =
+    hostCpuCountResult.cores *
+    hostCpuCountResult.threads *
+    hostCpuCountResult.sockets;
+
+  const result: Record<string, number> = {};
+
+  new Set([...Object.keys(v1), ...Object.keys(v2)]).forEach((key) => {
+    if (!(key in v1)) return;
+    if (!(key in v2)) return;
+    const a = v1[key];
+    const b = v2[key];
+    if (typeof a === 'bigint') return;
+    if (typeof b === 'bigint') return;
+    const newKey = key.endsWith('_time')
+      ? key.substring(0, key.length - '_time'.length)
+      : key;
+    result[newKey] = ((b - a) / hostCpuCount / distance) * 100;
+  });
+
   return result;
 }

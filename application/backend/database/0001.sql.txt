@@ -1,0 +1,5 @@
+ALTER TABLE user ADD `home` text DEFAULT '/root' NOT NULL;--> statement-breakpoint
+ALTER TABLE user ADD `role` text DEFAULT 'User' NOT NULL;--> statement-breakpoint
+
+UPDATE user set role = 'Administrator';--> statement-breakpoint
+

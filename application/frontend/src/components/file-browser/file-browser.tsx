@@ -124,6 +124,7 @@ export default function FileBrowser(props: {
 
   async function focusInputRef(input: HTMLInputElement) {
     if (!input || input === document.activeElement) return;
+    await new Promise((cb) => setTimeout(cb, 100));
     input.select();
     input.focus();
   }

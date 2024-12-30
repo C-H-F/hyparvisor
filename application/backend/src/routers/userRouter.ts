@@ -1,12 +1,12 @@
 import { trpc } from '../trpc.js';
-import { users, sessions, keyValues } from '../database/schema.js';
+import { users, sessions, keyValues, ziUser } from '../database/schema.js';
 import { nanoid } from 'nanoid';
 import z from 'zod';
 
 import { db } from '../database/drizzle.js';
 import { fetchUserFromSession } from '../trpcUtils.js';
 import { TRPCError } from '@trpc/server';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 async function getSessionTimeout() {
   const sessionTimeout = +(
@@ -20,6 +20,7 @@ async function getSessionTimeout() {
 }
 
 export const userRouter = trpc.router({
+  //#region login
   login: trpc.procedure
     .meta({
       openapi: {
@@ -106,6 +107,9 @@ export const userRouter = trpc.router({
         .run();
       return sessionId;
     }),
+  //#endregion login
+
+  //#region logout
   logout: trpc.procedure
     .meta({
       openapi: {
@@ -150,6 +154,9 @@ export const userRouter = trpc.router({
         .run();
       return end;
     }),
+  //#endregion logout
+
+  //#region getName
   getName: trpc.procedure
     .meta({
       openapi: {
@@ -177,6 +184,92 @@ export const userRouter = trpc.router({
         return null;
       }
     }),
+  //#endregion getName
+
+  //#region getAccountDetails
+  getAccountDetails: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'GET',
+        path: '/user/getAccountDetails',
+        summary: 'Fetches the account details of the current user.',
+        tags: ['user'],
+        protect: true,
+      },
+    })
+    .input(
+      z.object({
+        email: z.string().optional(),
+        sessionLimit: z.number().optional(),
+      })
+    )
+    .output(
+      z.object({
+        email: z.string(),
+        passwordExpiration: z.number().nullable(),
+        home: z.string(),
+        sessions: z
+          .object({
+            begin: z.number(),
+            end: z.number(),
+            agent: z.string(),
+          })
+          .array(),
+        role: ziUser.shape.role,
+        permissions: z.string().array(),
+      })
+    )
+    .query(async function ({ ctx, input }) {
+      const user = await fetchUserFromSession(ctx.session);
+      if (!input.email) {
+        const userEntry = db
+          .select()
+          .from(users)
+          .where(eq(users.id, user))
+          .all()[0];
+        const email = userEntry.email;
+        const passwordExpiration =
+          userEntry.passwordExpiration?.getTime() ?? null;
+        const sessionSelector = {
+          begin: sessions.begin,
+          end: sessions.end,
+          agent: sessions.agent,
+        };
+
+        const sessionEntries = db
+          .select(sessionSelector)
+          .from(sessions)
+          .where(eq(sessions.user, user))
+          .orderBy(desc(sessions.end))
+          .limit(input.sessionLimit ?? 10)
+          .all();
+
+        return {
+          email,
+          passwordExpiration,
+          role: userEntry.role,
+          home: userEntry.home,
+          permissions: [],
+          sessions: sessionEntries.map((x) => ({
+            begin: x.begin.getTime(),
+            end: x.end.getTime(),
+            agent: x.agent,
+          })),
+        };
+        //TODO
+      } else {
+        //TODO Fetch data about different user if allowed.
+      }
+      return {
+        email: '',
+        passwordExpiration: null,
+        home: '',
+        sessions: [],
+        role: 'User',
+        permissions: [],
+      };
+    }),
+  //#endregion
 });
 
 async function changePassword(

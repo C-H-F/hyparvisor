@@ -49,10 +49,7 @@ const errorLink: TRPCLink<AppRouter> = () => {
           observer.next(value);
         },
         error(err) {
-          //TODO: Create an error toast...
-          console.error('ERROR', JSON.stringify(err));
           for (const callback of errorCallbacks) callback(err);
-
           observer.error(err);
         },
         complete() {

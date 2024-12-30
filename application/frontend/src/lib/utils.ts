@@ -54,3 +54,22 @@ export function combinePath(...elements: string[]) {
   for (const e of elements) result += e.endsWith('/') ? e : e + '/';
   return result.substring(0, result.length - 1);
 }
+
+export function singularPlural(
+  count: number,
+  singular: string | ((count: number) => string),
+  plural: string | ((count: number) => string)
+) {
+  return count === 1
+    ? typeof singular === 'function'
+      ? singular(count)
+      : singular
+    : typeof plural === 'function'
+      ? plural(count)
+      : plural;
+}
+
+export function floor(num: number, precision: number) {
+  const factor = 10 ** precision;
+  return Math.floor(num * factor) / factor;
+}

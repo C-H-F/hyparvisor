@@ -24,9 +24,10 @@ export function spawn(
   const decoder = new TextDecoder(options.encoding || 'utf-8');
   let cols = options.cols;
   let rows = options.rows;
-  subprocess.stdin.write(`stty cols ${+cols}\n`);
-  subprocess.stdin.write(`stty rows ${+rows}\n`);
-  subprocess.stdin.write(`stty echo\n`);
+  subprocess.stdin.write(` HISTCONTROL=ignorespace\n`);
+  subprocess.stdin.write(` stty cols ${+cols}\n`);
+  subprocess.stdin.write(` stty rows ${+rows}\n`);
+  subprocess.stdin.write(` stty echo\n`);
   return {
     cols,
     rows,

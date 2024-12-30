@@ -11,6 +11,7 @@ import { createWebsockifyWrapper } from './websockify.js';
 import path from 'path';
 import { parseArgs } from 'node:util';
 import { getIpAddresses, toNumber } from './utils.js';
+import { runServerActions } from './serverActions.js';
 export type AppRouter = typeof appRouter;
 
 const parsedArguments = parseArgs({
@@ -68,3 +69,5 @@ for (const ip of getIpAddresses()) {
     `  - http://${ip.indexOf(':') >= 0 ? '[' + ip + ']' : ip}:${port}/`
   );
 }
+
+runServerActions();

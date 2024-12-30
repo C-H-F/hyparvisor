@@ -1,7 +1,7 @@
 import StandardLayout from '@/components/layout/standard-layout';
 import { Button } from '@/components/shadcn/ui/button';
 import { Skeleton } from '@/components/shadcn/ui/skeleton';
-import { useAsyncEffect } from '@/lib/react-utils';
+import { useAsyncEffect, useInterval } from '@/lib/react-utils';
 import { client } from '@/trpc-client';
 import {
   Component,
@@ -38,12 +38,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/shadcn/ui/dropdown-menu';
 import { selectFile } from '@/components/file-selector';
 import { cn } from '@/lib/shadcn-utils';
 import { GamepadIcon } from 'lucide-react';
 import { Input } from '@/components/shadcn/ui/input';
+import deepDiff, { applyChange } from 'deep-diff';
+import { ScreenPreview } from './screen-preview';
 
 type OperatingSystem = Awaited<
   ReturnType<typeof client.vm.listOperatingSystems.query>
@@ -56,7 +62,6 @@ async function getDefaultPath() {
 }
 
 export default function ShowVm() {
-  let screenshotInterval: ReturnType<typeof setInterval>;
   const { id: rawId } = useParams();
   const [info, setInfo] = useState<ExtendedVmInfo | null>(null);
   const [definition, setDefinition] = useState<VmDefinition | null>(null);
@@ -66,12 +71,25 @@ export default function ShowVm() {
   const [operatingSystems, setOperatingSystems] = useState<OperatingSystem[]>(
     []
   );
-  const [screenshot, setScreenshot] = useState<string | null>(null);
   const [editName, setEditName] = useState(false);
   const id = rawId ?? '';
   useAsyncEffect(async function () {
-    const operatingSystems = await client.vm.listOperatingSystems.query();
-    setOperatingSystems(operatingSystems);
+    try {
+      const operatingSystems = await client.vm.listOperatingSystems.query();
+      setOperatingSystems(operatingSystems);
+    } catch (exc) {
+      if (
+        exc &&
+        typeof exc === 'object' &&
+        'message' in exc &&
+        typeof exc.message === 'string' &&
+        exc.message.trimEnd().endsWith('osinfo-query: command not found')
+      ) {
+        console.log('NOTE: osinfo-query is not installed on the server.');
+        return;
+      }
+      throw exc;
+    }
   }, []);
   useAsyncEffect(async function () {
     console.log('id', id, rawId);
@@ -122,35 +140,21 @@ export default function ShowVm() {
       });
       return;
     }
-    const name = id;
-    const pInfo = client.vm.getInfo.query({ name });
-    const pDefinition = client.vm.getDefinition.query({ name });
-    const info = await pInfo;
-    const definition = await pDefinition;
-    setInfo({ ...info, virtual: false });
-    setDefinition(definition);
-    setSourceDefinition(definition);
+    await refreshData();
   }, []);
-  useAsyncEffect(
-    async function () {
-      if (info?.state != 'running') return;
-      screenshotInterval = setInterval(async () => {
-        const name = id ?? '';
-        const info = await client.vm.getInfo.query({ name });
-        if (info.state != 'running') {
-          setScreenshot(null);
-          clearInterval(screenshotInterval);
-          setInfo({ ...info, virtual: false });
-          return;
-        }
-        const screenshot = await client.vm.screenshot.query({ name });
-        setScreenshot(screenshot);
-      }, 1000);
+  const stopInterval = useInterval(
+    async (state) => {
+      if (state !== 'running') stopInterval();
+      const name = id ?? '';
+      const info = await client.vm.getInfo.query({ name });
+      if (info.state != 'running') {
+        stopInterval();
+        setInfo({ ...info, virtual: false });
+        return;
+      }
     },
-    [info?.state],
-    () => {
-      clearInterval(screenshotInterval);
-    }
+    1000,
+    info?.state
   );
   const definitionChanged =
     JSON.stringify(definition) !== JSON.stringify(sourceDefinition);
@@ -161,9 +165,6 @@ export default function ShowVm() {
         <Button>Back</Button>
       </Link>
 
-      <Link to={'/vm/edit/' + id}>
-        <Button>Edit</Button>
-      </Link>
       <Link to={'/vm/xml/' + id}>
         <Button>XML</Button>
       </Link>
@@ -304,10 +305,7 @@ export default function ShowVm() {
                   if (info.state === 'paused')
                     await client.vm.resume.mutate({ name: id });
                   else await client.vm.start.mutate({ name: id });
-                  setInfo({
-                    ...(await client.vm.getInfo.query({ name: id })),
-                    virtual: false,
-                  });
+                  await refreshData();
                 }}
                 style={{
                   display: info.state === 'running' ? 'none' : '',
@@ -319,10 +317,7 @@ export default function ShowVm() {
                 variant="ghost"
                 onClick={async () => {
                   await client.vm.pause.mutate({ name: id });
-                  setInfo({
-                    ...(await client.vm.getInfo.query({ name: id })),
-                    virtual: false,
-                  });
+                  await refreshData();
                 }}
                 style={{
                   display:
@@ -337,10 +332,7 @@ export default function ShowVm() {
                 variant="ghost"
                 onClick={async () => {
                   await client.vm.stop.mutate({ name: id, force: true });
-                  setInfo({
-                    ...(await client.vm.getInfo.query({ name: id })),
-                    virtual: false,
-                  });
+                  await refreshData();
                 }}
                 style={{
                   display: info.state === 'shut off' ? 'none' : '',
@@ -367,270 +359,326 @@ export default function ShowVm() {
                   );
                 }}
               >
-                {screenshot ? (
-                  <img
-                    src={screenshot}
-                    alt="Screenshot"
-                    className="max-h-full max-w-full flex-shrink flex-grow"
-                  />
-                ) : (
-                  ''
-                )}
-              </div>
-              <div className="flex flex-col gap-3">
-                <div className="flex">
-                  <h2 className="flex-grow">Devices</h2>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="mx-5">
-                      <PlusCircle className="mr-2 inline-block" />
-                      Add Device
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          const file = await selectFile({
-                            path: await getDefaultPath(),
-                            filters: {
-                              '\\.(qcow2|raw)$': 'Disk Images (*.qcow2, *.raw)',
-                              '.*': 'All Files',
-                            },
-                          });
-                          if (file == null) return;
-                          addDeviceToDefinition({
-                            deviceType: 'disk',
-                            type: 'file',
-                            source: { type: 'file', value: file },
-                            device: 'disk',
-                          });
-                        }}
-                      >
-                        <HardDrive className="mr-2 inline-block" />
-                        Add Hard Disk
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          const file = await selectFile({
-                            path: await getDefaultPath(),
-                            filters: {
-                              '\\.iso$': 'ISO Files (*.iso)',
-                              '.*': 'All Files',
-                            },
-                          });
-                          if (file == null) return;
-
-                          addDeviceToDefinition({
-                            deviceType: 'disk',
-                            type: 'file',
-                            source: { type: 'file', value: file },
-                            device: 'cdrom',
-                            target: { bus: 'sata', dev: getNextHdDev() },
-                          });
-                        }}
-                      >
-                        <Disc className="mr-2 inline-block" />
-                        Add Optical Drive
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          const file = await selectFile({
-                            path: await getDefaultPath(),
-                            filters: {
-                              '\\.img$': 'Floppy image (*.img)',
-                              '.*': 'All Files',
-                            },
-                          });
-                          if (file == null) return;
-                          addDeviceToDefinition({
-                            deviceType: 'disk',
-                            type: 'file',
-                            source: { type: 'file', value: file },
-                            device: 'floppy',
-                          });
-                        }}
-                      >
-                        <Save className="mr-2 inline-block" />
-                        Add Floppy Drive
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={async () => {
-                          addDeviceToDefinition({
-                            deviceType: 'interface',
-                            interfaceType: 'network',
-                            sourceNetwork: 'default',
-                          });
-                        }}
-                      >
-                        <NetworkIcon className="mr-2 inline-block" />
-                        Add Network Adapter
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Cpu className="mr-2 inline-block" />
-                        Add Generic Device
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <SortableArrayList
-                  items={definition.devices}
-                  onChange={(devices) =>
-                    setDefinition({ ...definition, devices })
+                <ScreenPreview
+                  name={
+                    info.state === 'running' || info.state === 'paused'
+                      ? id
+                      : ''
                   }
-                  renderItem={(device, index) => {
-                    let key = '';
-                    let text = 'Unknown device';
-                    let icon = <Component />;
-                    if (
-                      device.deviceType === 'graphics' &&
-                      device.graphicsDevice === 'vnc'
-                    ) {
-                      key = `vnc@${(device as VncGraphicsDevice).port}`;
-                      text = `VNC @ ${(device as VncGraphicsDevice).port}`;
-                      icon = <Monitor />;
-                    }
-                    if (
-                      device.deviceType === 'disk' &&
-                      device.device === 'cdrom' &&
-                      device.source.type === 'file'
-                    ) {
-                      key = `cdrom@${device.source}`;
-                      text = `${device.source.value}`;
-                      icon = <Disc />;
-                    }
-                    if (
-                      device.deviceType === 'disk' &&
-                      device.device === 'disk' &&
-                      device.source.type === 'file'
-                    ) {
-                      key = `disk@${device.source}`;
-                      text = `${device.source.value}`;
-                      icon = <HardDrive />;
-                    }
-                    if (
-                      device.deviceType === 'interface' &&
-                      device.interfaceType === 'network'
-                    ) {
-                      key = `network@${device.macAddress}`;
-                      text = `${device.macAddress} -> ${device.sourceNetwork} ${device.alias}`;
-                      icon = <NetworkIcon />;
-                    }
-                    if (device.deviceType === 'input') {
-                      key = `input@?`;
-                      text = `${device.bus} ${device.inputDevice}`;
-                      if (device.alias) text = device.alias + ': ' + text;
-                      switch (device.inputDevice) {
-                        case 'keyboard':
-                          icon = <KeyboardIcon />;
-                          break;
-                        case 'mouse':
-                          icon = <MouseIcon />;
-                          break;
-                        case 'tablet':
-                          icon = <TabletIcon />;
-                          break;
-                        case 'passthrough':
-                          icon = <GamepadIcon />;
-                          break;
-                        case 'evdev':
-                          icon = <ServerCogIcon />;
-                          break;
-                        default:
-                          icon = <Component />;
-                          break;
-                      }
-                    }
-                    return (
-                      <SortableList.Item
-                        id={index}
-                        className="flex w-full"
-                        data-key={key}
-                      >
-                        <SortableList.DragHandle />
-                        <div className="flex flex-grow items-center">
-                          {icon}
-                          <span className="ml-3 flex-grow">{text}</span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger className="mx-5">
-                              <MoreVertical className="mr-2 inline-block" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem
-                                onClick={async () => {
-                                  setDefinition({
-                                    ...definition,
-                                    devices: [
-                                      ...definition.devices.filter(
-                                        (x) => x !== device
-                                      ),
-                                    ],
-                                  });
-                                }}
-                              >
-                                Remove
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </SortableList.Item>
-                    );
-                  }}
                 />
               </div>
             </div>
-            <CpuConfigurationDialog
-              cpuDetails={{ vcpuCount: definition.vcpuCount }}
-              onSave={async (cpuDetails) => {
-                setDefinition({
-                  ...definition,
-                  vcpuCount: cpuDetails.vcpuCount,
-                });
-              }}
-            >
-              <Button
-                variant="outline"
-                className="flex-row px-0 py-7 text-left"
+            <div className="flex flex-col gap-3">
+              <CpuConfigurationDialog
+                cpuDetails={{ vcpuCount: definition.vcpuCount }}
+                onSave={async (cpuDetails) => {
+                  setDefinition({
+                    ...definition,
+                    vcpuCount: cpuDetails.vcpuCount,
+                  });
+                }}
               >
-                <Cpu className="mr-3 h-14 w-14 p-2" />
-                <div className="flex flex-grow flex-col justify-center">
-                  {info.state == 'running' ? (
-                    <>
-                      <p>{info.cpus} CPUs</p>
-                      <p>{info.cpuTime}</p>
-                    </>
-                  ) : (
-                    <>
-                      <p>{definition.vcpuCount} CPUs</p>
-                    </>
-                  )}
-                </div>
-              </Button>
-            </CpuConfigurationDialog>
-            <MemoryConfigurationDialog
-              memoryDetails={{ memorySize: definition.memory }}
-              onSave={async (memoryDetails) => {
-                setDefinition({
-                  ...definition,
-                  memory: memoryDetails.memorySize,
-                });
-              }}
-            >
-              <Button
-                variant="outline"
-                className="flex-row px-0 py-7 text-left"
+                <Button
+                  variant="outline"
+                  className="flex-row px-0 py-7 text-left"
+                >
+                  <Cpu className="mr-3 h-14 w-14 p-2" />
+                  <div className="flex flex-grow flex-col justify-center">
+                    {info.state == 'running' ? (
+                      <>
+                        <p>{info.cpus} CPUs</p>
+                        <p>{info.cpuTime}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p>{definition.vcpuCount} CPUs</p>
+                      </>
+                    )}
+                  </div>
+                </Button>
+              </CpuConfigurationDialog>
+              <MemoryConfigurationDialog
+                memoryDetails={{ memorySize: definition.memory }}
+                onSave={async (memoryDetails) => {
+                  setDefinition({
+                    ...definition,
+                    memory: memoryDetails.memorySize,
+                  });
+                }}
               >
-                <MemoryStick className="mr-3 h-14 w-14 p-2" />
-                <div className="flex flex-grow flex-col justify-center">
-                  {info.state == 'running' ? (
-                    <>
-                      {bytes.format(info.usedMemory ?? 0, { mode: 'binary' })}
-                      {' / '}
-                      {bytes.format(info.maxMemory ?? 0, { mode: 'binary' })}
-                    </>
-                  ) : (
-                    <>{bytes.format(definition.memory, { mode: 'binary' })}</>
-                  )}
-                </div>
-              </Button>
-            </MemoryConfigurationDialog>
+                <Button
+                  variant="outline"
+                  className="flex-row px-0 py-7 text-left"
+                >
+                  <MemoryStick className="mr-3 h-14 w-14 p-2" />
+                  <div className="flex flex-grow flex-col justify-center">
+                    {info.state == 'running' ? (
+                      <>
+                        {bytes.format(info.usedMemory ?? 0, { mode: 'binary' })}
+                        {' / '}
+                        {bytes.format(info.maxMemory ?? 0, { mode: 'binary' })}
+                      </>
+                    ) : (
+                      <>{bytes.format(definition.memory, { mode: 'binary' })}</>
+                    )}
+                  </div>
+                </Button>
+              </MemoryConfigurationDialog>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex">
+                <h2 className="flex-grow">Devices</h2>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="mx-5">
+                    <PlusCircle className="mr-2 inline-block" />
+                    Add Device
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <MouseIcon className="mr-2 inline-block" /> Add HID
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              addDeviceToDefinition({
+                                deviceType: 'input',
+                                inputDevice: 'keyboard',
+                                bus: 'ps2',
+                              });
+                            }}
+                          >
+                            <KeyboardIcon className="mr-2 inline-block" /> Add
+                            Keyboard
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              addDeviceToDefinition({
+                                deviceType: 'input',
+                                inputDevice: 'mouse',
+                                bus: 'ps2',
+                              });
+                            }}
+                          >
+                            <MouseIcon className="mr-2 inline-block" /> Add
+                            Mouse
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              addDeviceToDefinition({
+                                deviceType: 'input',
+                                inputDevice: 'tablet',
+                                bus: 'usb',
+                              });
+                            }}
+                          >
+                            <TabletIcon className="mr-2 inline-block" /> Add
+                            Tablet
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <HardDrive className="mr-2 inline-block" /> Add Storage
+                        Device
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuPortal>
+                        <DropdownMenuSubContent>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              const file = await selectFile({
+                                path: await getDefaultPath(),
+                                filters: {
+                                  '\\.(qcow2|raw)$':
+                                    'Disk Images (*.qcow2, *.raw)',
+                                  '.*': 'All Files',
+                                },
+                              });
+                              if (file == null) return;
+                              addDeviceToDefinition({
+                                deviceType: 'disk',
+                                type: 'file',
+                                source: { type: 'file', value: file },
+                                device: 'disk',
+                              });
+                            }}
+                          >
+                            <HardDrive className="mr-2 inline-block" />
+                            Add Hard Disk
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              const file = await selectFile({
+                                path: await getDefaultPath(),
+                                filters: {
+                                  '\\.iso$': 'ISO Files (*.iso)',
+                                  '.*': 'All Files',
+                                },
+                              });
+                              if (file == null) return;
+
+                              addDeviceToDefinition({
+                                deviceType: 'disk',
+                                type: 'file',
+                                source: { type: 'file', value: file },
+                                device: 'cdrom',
+                                target: { bus: 'sata', dev: getNextHdDev() },
+                              });
+                            }}
+                          >
+                            <Disc className="mr-2 inline-block" />
+                            Add Optical Drive
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              const file = await selectFile({
+                                path: await getDefaultPath(),
+                                filters: {
+                                  '\\.img$': 'Floppy image (*.img)',
+                                  '.*': 'All Files',
+                                },
+                              });
+                              if (file == null) return;
+                              addDeviceToDefinition({
+                                deviceType: 'disk',
+                                type: 'file',
+                                source: { type: 'file', value: file },
+                                device: 'floppy',
+                              });
+                            }}
+                          >
+                            <Save className="mr-2 inline-block" />
+                            Add Floppy Drive
+                          </DropdownMenuItem>
+                        </DropdownMenuSubContent>
+                      </DropdownMenuPortal>
+                    </DropdownMenuSub>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        addDeviceToDefinition({
+                          deviceType: 'interface',
+                          interfaceType: 'network',
+                          sourceNetwork: 'default',
+                        });
+                      }}
+                    >
+                      <NetworkIcon className="mr-2 inline-block" />
+                      Add Network Adapter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Cpu className="mr-2 inline-block" />
+                      Add Generic Device
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <SortableArrayList
+                items={definition.devices}
+                onChange={(devices) =>
+                  setDefinition({ ...definition, devices })
+                }
+                renderItem={(device, index) => {
+                  let key = '';
+                  let text = 'Unknown device';
+                  let icon = <Component />;
+                  if (
+                    device.deviceType === 'graphics' &&
+                    device.graphicsDevice === 'vnc'
+                  ) {
+                    key = `vnc@${(device as VncGraphicsDevice).port}`;
+                    text = `VNC @ ${(device as VncGraphicsDevice).port}`;
+                    icon = <Monitor />;
+                  }
+                  if (
+                    device.deviceType === 'disk' &&
+                    device.device === 'cdrom' &&
+                    device.source.type === 'file'
+                  ) {
+                    key = `cdrom@${device.source}`;
+                    text = `${device.source.value}`;
+                    icon = <Disc />;
+                  }
+                  if (
+                    device.deviceType === 'disk' &&
+                    device.device === 'disk' &&
+                    device.source.type === 'file'
+                  ) {
+                    key = `disk@${device.source}`;
+                    text = `${device.source.value}`;
+                    icon = <HardDrive />;
+                  }
+                  if (
+                    device.deviceType === 'interface' &&
+                    device.interfaceType === 'network'
+                  ) {
+                    key = `network@${device.macAddress}`;
+                    text = `${device.macAddress} -> ${device.sourceNetwork} ${device.alias}`;
+                    icon = <NetworkIcon />;
+                  }
+                  if (device.deviceType === 'input') {
+                    key = `input@?`;
+                    text = `${device.bus} ${device.inputDevice}`;
+                    if (device.alias) text = device.alias + ': ' + text;
+                    switch (device.inputDevice) {
+                      case 'keyboard':
+                        icon = <KeyboardIcon />;
+                        break;
+                      case 'mouse':
+                        icon = <MouseIcon />;
+                        break;
+                      case 'tablet':
+                        icon = <TabletIcon />;
+                        break;
+                      case 'passthrough':
+                        icon = <GamepadIcon />;
+                        break;
+                      case 'evdev':
+                        icon = <ServerCogIcon />;
+                        break;
+                      default:
+                        icon = <Component />;
+                        break;
+                    }
+                  }
+                  return (
+                    <SortableList.Item
+                      id={index}
+                      className="flex w-full"
+                      data-key={key}
+                    >
+                      <SortableList.DragHandle />
+                      <div className="flex flex-grow items-center">
+                        {icon}
+                        <span className="ml-3 flex-grow">{text}</span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="mx-5">
+                            <MoreVertical className="mr-2 inline-block" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                setDefinition({
+                                  ...definition,
+                                  devices: [
+                                    ...definition.devices.filter(
+                                      (x) => x !== device
+                                    ),
+                                  ],
+                                });
+                              }}
+                            >
+                              Remove
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </SortableList.Item>
+                  );
+                }}
+              />
+            </div>
           </div>
         </>
       ) : (
@@ -662,5 +710,23 @@ export default function ShowVm() {
       if (!found) return result;
     }
     return '';
+  }
+  async function refreshData() {
+    const name = id;
+    const pInfo = client.vm.getInfo.query({ name });
+    const pDefinition = client.vm.getDefinition.query({ name });
+
+    const diff = deepDiff(sourceDefinition, definition);
+
+    const info = await pInfo;
+    const newDef = await pDefinition;
+    const newModifiedDef = structuredClone(newDef);
+
+    if (diff)
+      diff.forEach((change) => applyChange(newModifiedDef, true, change));
+
+    setInfo({ ...info, virtual: false });
+    setDefinition(newModifiedDef);
+    setSourceDefinition(newDef);
   }
 }

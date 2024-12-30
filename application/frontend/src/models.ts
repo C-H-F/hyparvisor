@@ -14,3 +14,17 @@ export type VncGraphicsDevice = Extract<
 export type Network = Awaited<
   ReturnType<typeof client.vm.getNetworks.query>
 >[0];
+
+export type AccountDetails = Awaited<
+  ReturnType<typeof client.user.getAccountDetails.query>
+>;
+export function makeDefaultAccountDetails(): AccountDetails {
+  return {
+    email: '',
+    permissions: [],
+    passwordExpiration: null,
+    role: 'User',
+    home: '',
+    sessions: [],
+  };
+}

@@ -25,7 +25,6 @@ export default function ComboBox(props: {
   const values: ComboBoxModel = props.values;
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(props.selected);
-  console.log('VALUES', values);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

@@ -3,8 +3,10 @@ import {
   text,
   integer,
   uniqueIndex,
+  primaryKey,
 } from 'drizzle-orm/sqlite-core';
-import { InferModel } from 'drizzle-orm';
+import { InferSelectModel } from 'drizzle-orm';
+import { createInsertSchema } from 'drizzle-zod';
 
 export const users = sqliteTable(
   'user',
@@ -13,17 +15,35 @@ export const users = sqliteTable(
     email: text('email').notNull(),
     password: text('password').notNull(),
     passwordExpiration: integer('password_expiration', { mode: 'timestamp' }),
+    home: text('home').notNull().default('/root'),
+    role: text('role', { enum: ['Administrator', 'User'] })
+      .notNull()
+      .default('User'),
   },
   (users) => ({ emailIdx: uniqueIndex('emailIdx').on(users.email) })
 );
-export type User = InferModel<typeof users>;
+export type SUser = InferSelectModel<typeof users>;
+export const ziUser = createInsertSchema(users);
+// export const zsUser = createSelectSchema(users);
 
-export const systemUsers = sqliteTable('system_user', {
-  user: integer('user').primaryKey(),
-  username: text('username').notNull(), //Maybe add to primary in the future.
-  salt: text('salt').notNull(),
-  password: text('password').notNull(),
-});
+export const domainActions = sqliteTable(
+  'domain_action',
+  {
+    domain: text('domain'),
+    timestamp: integer('timestamp', { mode: 'timestamp_ms' }),
+    action: text('action'),
+    value: integer('value').notNull(),
+  },
+  (domainActions) => ({
+    domainTimestampIdx: primaryKey({
+      columns: [
+        domainActions.domain,
+        domainActions.timestamp,
+        domainActions.action,
+      ],
+    }),
+  })
+);
 
 export const sessions = sqliteTable('session', {
   id: text('id').primaryKey(),
@@ -32,15 +52,15 @@ export const sessions = sqliteTable('session', {
   begin: integer('begin', { mode: 'timestamp' }).notNull(),
   end: integer('end', { mode: 'timestamp' }).notNull(),
 });
-export type Session = InferModel<typeof sessions>;
+export type SSession = InferSelectModel<typeof sessions>;
 
 export const keyValues = sqliteTable('key_value', {
   key: text('k', { enum: ['session_timeout'] }).primaryKey(),
   value: text('v').notNull(),
 });
-export type KeyValue = InferModel<typeof keyValues>;
+export type SKeyValue = InferSelectModel<typeof keyValues>;
 
 export const temporaries = sqliteTable('temporary', {
   key: text('value').primaryKey(),
 });
-export type Temporary = InferModel<typeof temporaries>;
+export type STemporary = InferSelectModel<typeof temporaries>;

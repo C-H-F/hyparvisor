@@ -1,5 +1,5 @@
 import StandardLayout from '@/components/layout/standard-layout';
-import { useAsyncEffect } from '@/lib/react-utils';
+import { useInterval } from '@/lib/react-utils';
 import { client } from '@/trpc-client';
 import { useState } from 'react';
 import { EChart } from '@/components/echarts/echart';
@@ -16,32 +16,23 @@ export default function Dashboard() {
   const [cpuHistory, setCpuHistory] = useState([
     [new Date().toISOString(), 0, 0],
   ]);
-  let interval: ReturnType<typeof setInterval>;
-  useAsyncEffect(
-    async () => {
-      interval = setInterval(async () => {
-        const cpuRes = await client.system.getCpuUsage.query();
-        const memRes = await client.system.getMemoryUsage.query();
-        const cpuUsage = cpuRes.usage ?? 0;
-        const maxMem = memRes.total ?? 0;
-        const freeMem = memRes.free ?? 0;
-        const memUsage = maxMem - freeMem;
-        setTotalMemoryUsage(memUsage);
-        setTotalCpuUsage(cpuUsage);
-        setMaxMemory(maxMem);
+  useInterval(async () => {
+    const cpuRes = await client.system.getCpuUsage.query();
+    const memRes = await client.system.getMemoryUsage.query();
+    const cpuUsage = cpuRes.usage ?? 0;
+    const maxMem = memRes.total ?? 0;
+    const freeMem = memRes.free ?? 0;
+    const memUsage = maxMem - freeMem;
+    setTotalMemoryUsage(memUsage);
+    setTotalCpuUsage(cpuUsage);
+    setMaxMemory(maxMem);
 
-        setCpuHistory((cpuHistory) => {
-          const result = [...cpuHistory, [new Date().toISOString(), cpuUsage]];
-          while (result.length > 60) result.shift();
-          return result;
-        });
-      }, 1000);
-    },
-    [],
-    () => {
-      clearInterval(interval);
-    }
-  );
+    setCpuHistory((cpuHistory) => {
+      const result = [...cpuHistory, [new Date().toISOString(), cpuUsage]];
+      while (result.length > 60) result.shift();
+      return result;
+    });
+  }, 1000);
 
   return (
     <StandardLayout>

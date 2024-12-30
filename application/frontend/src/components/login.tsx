@@ -15,6 +15,7 @@ import {
 import { sha512 } from '@/lib/crypto';
 import { useSession } from '@/context/appContext';
 import { client } from '@/trpc-client';
+import { createPasswordHash } from '@/lib/app-utils';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -42,8 +43,8 @@ export default function Login() {
       return;
     }
     const agent = navigator.userAgent;
-    const passwordHash = await sha512(email + ':' + password);
-    const newPasswordHash = await sha512(email + ':' + newPassword1);
+    const passwordHash = await createPasswordHash(email, password);
+    const newPasswordHash = await createPasswordHash(email, newPassword1);
     try {
       const token = await client.user.login.mutate({
         email,
@@ -59,7 +60,7 @@ export default function Login() {
   }
   async function login() {
     const agent = navigator.userAgent;
-    const passwordHash = await sha512(email + ':' + password);
+    const passwordHash = await createPasswordHash(email, password);
     try {
       const token = await client.user.login.mutate({
         email,
@@ -147,7 +148,7 @@ export default function Login() {
             className="grid-cols-[auto, auto] relative z-10 m-5 grid gap-5"
             style={{ display: renewalRequired ? 'none' : '' }}
           >
-            <Label htmlFor="txtUsername" className="w-auto">
+            <Label htmlFor="txtUsername" className="flex w-auto items-center">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -167,7 +168,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               className=""
             />
-            <Label htmlFor="txtPassword" className="w-auto">
+            <Label htmlFor="txtPassword" className="flex w-auto items-center">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
