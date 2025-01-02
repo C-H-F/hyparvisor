@@ -3,11 +3,15 @@
 INSERT INTO user (
   `email`,
   `password`,
-  `password_expiration`
+  `password_expiration`,
+  `home`,
+  `role`
 ) VALUES (
   'root',
   '$argon2id$v=19$m=65536,t=3,p=4$xw5NV5qR7nlc3Up0djHePw$/QVJu1vHU9W005SVHgwkp5bwQ34PzsU+bdIIapLyUJU',
-  946681200
+  946681200,
+  '/root',
+  'Administrator'
 );
 --> statement-breakpoint
 
