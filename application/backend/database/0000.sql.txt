@@ -1,87 +1,35 @@
+CREATE TABLE `domain_action` (
+	`domain` text,
+	`timestamp` integer,
+	`action` text,
+	`value` integer NOT NULL,
+	PRIMARY KEY(`action`, `domain`, `timestamp`)
+);
+--> statement-breakpoint
 CREATE TABLE `key_value` (
-  `k` text PRIMARY KEY NOT NULL,
-  `v` text NOT NULL
+	`k` text PRIMARY KEY NOT NULL,
+	`v` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `session` (
-  `id` text PRIMARY KEY NOT NULL,
-  `user` integer NOT NULL,
-  `agent` text NOT NULL,
-  `begin` integer NOT NULL,
-  `end` integer NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE `system_user` (
-  `user` integer PRIMARY KEY NOT NULL,
-  `username` text NOT NULL,
-  `salt` text NOT NULL,
-  `password` text NOT NULL
+	`id` text PRIMARY KEY NOT NULL,
+	`user` integer NOT NULL,
+	`agent` text NOT NULL,
+	`begin` integer NOT NULL,
+	`end` integer NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `temporary` (
-  `value` text PRIMARY KEY NOT NULL
+	`value` text PRIMARY KEY NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `user` (
-  `id` integer PRIMARY KEY NOT NULL,
-  `email` text NOT NULL,
-  `password` text NOT NULL,
-  `password_expiration` integer
+	`id` integer PRIMARY KEY NOT NULL,
+	`email` text NOT NULL,
+	`password` text NOT NULL,
+	`password_expiration` integer,
+	`home` text DEFAULT '/root' NOT NULL,
+	`role` text DEFAULT 'User' NOT NULL
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `emailIdx` ON `user` (`email`);
-
---> statement-breakpoint
--- Custom SQL migration file, put you code below!
-
-INSERT INTO user (
-  `email`,
-  `password`,
-  `password_expiration`
-) VALUES (
-  'root',
-  '$argon2id$v=19$m=65536,t=3,p=4$xw5NV5qR7nlc3Up0djHePw$/QVJu1vHU9W005SVHgwkp5bwQ34PzsU+bdIIapLyUJU',
-  946681200
-);
---> statement-breakpoint
-INSERT INTO key_value (
-  `k`,
-  `v`
-) VALUES (
-  'session_timeout',
-  '86400'
-),
-(
-  'db_version',
-  '0'
-);
---> statement-breakpoint
-
-INSERT INTO system_user (
-  `user`,
-  `username`,
-  `salt`,
-  `password`
-) VALUES (
-  1,
-  'root',
-  '$argon2id$v=19$m=65536,t=3,p=4$6ZBxCMMQiNKsIGqRZU6WmQ',
-  '$aes-256-gcm$s=vo0DGoGyprUJkcQIOUWbJQ==,i=3NPUc6Gk9Uw=,a=tF4c8g==$NU5RSQ=='
-);
-
---> statement-breakpoint
-
-CREATE TABLE `domain_action` (
-  `domain` text,
-  `timestamp` integer,
-  `action` text,
-  `value` integer NOT NULL,
-  PRIMARY KEY(`domain`, `timestamp`, `action`)
-);
-
-
---> statement-breakpoint
-
-DROP TABLE system_user;
-
---> statement-breakpoint
