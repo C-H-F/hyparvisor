@@ -10,6 +10,7 @@ import {
   DownloadCloud,
   File,
   Folder,
+  HardDriveIcon,
   LayoutGrid,
   LayoutList,
   RefreshCw,
@@ -27,6 +28,7 @@ import {
   ContextMenuTrigger,
 } from '../shadcn/ui/context-menu';
 import { Progress } from '../shadcn/ui/progress';
+import { selectSize } from '../size-selector';
 
 type FsType = 'dir' | 'file';
 export type FsEntry = {
@@ -55,6 +57,7 @@ type FsDummy = {
 type LsFunc = (path: string) => Promise<FsEntry[]>;
 type RmFunc = (path: string) => Promise<void>;
 type MkdirFunc = (path: string) => Promise<void>;
+type MkQcow2Func = (path: string, size: number) => Promise<void>;
 type MvFunc = (src: string, dst: string) => Promise<void>;
 type TouchFunc = (path: string) => Promise<void>;
 type DownloadFunc = (url: string, dst: string) => void;
@@ -74,6 +77,7 @@ export default function FileBrowser(props: {
   mv?: MvFunc;
   mkdir?: MkdirFunc;
   touch?: TouchFunc;
+  mkQcow2?: MkQcow2Func;
   download?: DownloadFunc;
   onNavigate?: (path: string) => void;
   onSelect?: (path: FsEntry[]) => void;
@@ -439,6 +443,25 @@ export default function FileBrowser(props: {
                 </ContextMenuItem>
               ) : (
                 ''
+              )}
+              {props.mkQcow2 && (
+                <ContextMenuItem
+                  onClick={async () => {
+                    if (!props.mkQcow2) return;
+                    let name = await makeEntry('file');
+                    const size = await selectSize({
+                      title: 'Disk Size',
+                      content: 'Select the size of the new .qcow disk.',
+                      defaultSize: 4 * 1024 * 1024 * 1024,
+                    });
+                    if (!size) return;
+                    await props.mkQcow2(path + '/' + name, size);
+                    refreshPath();
+                  }}
+                >
+                  <HardDriveIcon className="m-2 h-4 w-4" />
+                  qcow2 Disk
+                </ContextMenuItem>
               )}
               {props.download ? (
                 <ContextMenuItem

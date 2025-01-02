@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from './shadcn/ui/dialog';
-import { download, ls, mkdir, mv, rm, touch } from '@/pages/storage';
+import { download, ls, mkdir, mkQcow2, mv, rm, touch } from '@/pages/storage';
 import { Input } from './shadcn/ui/input';
 import { Button } from './shadcn/ui/button';
 import { combinePath } from '@/lib/utils';
@@ -44,6 +44,7 @@ export function FileSelector(props: {
             rm={rm}
             mv={mv}
             touch={touch}
+            mkQcow2={mkQcow2}
             mkdir={(path: string) => mkdir(path)}
             download={download}
             onSelect={(selections) =>

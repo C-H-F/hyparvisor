@@ -31,6 +31,9 @@ export async function touch(path: string) {
 export async function download(url: string, destination: string) {
   await client.file.download.mutate({ source: url, destination });
 }
+export async function mkQcow2(path: string, size: number) {
+  await client.file.mkQcow2.mutate({ path, size });
+}
 
 export default function Storage() {
   const [path, setPath] = useState(
@@ -50,6 +53,7 @@ export default function Storage() {
         mv={mv}
         touch={touch}
         mkdir={(path: string) => mkdir(path)}
+        mkQcow2={mkQcow2}
         download={download}
       />
     </StandardLayout>

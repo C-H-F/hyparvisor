@@ -17,6 +17,7 @@ import { O_APPEND, O_CREAT } from 'node:constants';
 import { db } from '../database/drizzle.js';
 import { temporaries } from '../database/schema.js';
 import { eq } from 'drizzle-orm';
+import { execAsync } from '../virshManager.js';
 
 async function getFsEntry(dir: string, name: string) {
   const fullPath = path.join(dir, name);
@@ -55,6 +56,7 @@ export const zFsEntry = z.object({
 });
 
 export const fileRouter = trpc.router({
+  //#region ls
   ls: trpc.procedure
     .meta({
       openapi: {
@@ -74,6 +76,8 @@ export const fileRouter = trpc.router({
       const result = files.map((file) => getFsEntry(path, file));
       return await Promise.all(result);
     }),
+  //#endregion ls
+  //#region download
   download: trpc.procedure
     .meta({
       openapi: {
@@ -108,6 +112,8 @@ export const fileRouter = trpc.router({
       await rename(dst, input.destination);
       db.delete(temporaries).where(eq(temporaries.key, key)).run();
     }),
+  //#endregion download
+  //#region get
   get: trpc.procedure
     .meta({
       openapi: {
@@ -125,6 +131,8 @@ export const fileRouter = trpc.router({
       const result = await readFile(input.path, { encoding: 'binary' });
       return result;
     }),
+  //#endregion get
+  //#region rm
   rm: trpc.procedure
     .meta({
       openapi: {
@@ -141,6 +149,8 @@ export const fileRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       await rm(input.path, { recursive: true });
     }),
+  //#endregion rm
+  //#region mkdir
   mkdir: trpc.procedure
     .meta({
       openapi: {
@@ -157,6 +167,31 @@ export const fileRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       await mkdir(input.path);
     }),
+  //#endregion mkdir
+  //#region mkQcow2
+  mkQcow2: trpc.procedure
+    .meta({
+      openapi: {
+        method: 'POST',
+        path: '/file/mkQcow2',
+        tags: ['file'],
+        summary: 'Creates a qcow2 file.',
+        protect: true,
+      },
+    })
+    .input(z.object({ path: z.string(), size: z.number() }))
+    .output(z.void())
+    .mutation(async function ({ input, ctx }) {
+      await fetchUserFromSession(ctx.session);
+      await execAsync(
+        'qemu-img create -f qcow2 ' +
+          JSON.stringify(input.path) +
+          ' ' +
+          +input.size
+      );
+    }),
+  //#endregion mkQcow2
+  //#region mv
   mv: trpc.procedure
     .meta({
       openapi: {
@@ -173,6 +208,8 @@ export const fileRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       await rename(input.source, input.destination);
     }),
+  //#endregion mv
+  //#region touch
   touch: trpc.procedure
     .meta({
       openapi: {
@@ -193,6 +230,8 @@ export const fileRouter = trpc.router({
       await fileHandle.utimes(now, now);
       fileHandle.close();
     }),
+  //#endregion touch
+  //#region df
   df: trpc.procedure
     .meta({
       openapi: {
@@ -209,4 +248,5 @@ export const fileRouter = trpc.router({
       await fetchUserFromSession(ctx.session);
       return execSync('df -h', { encoding: 'utf8' });
     }),
+  //#endregion df
 });
