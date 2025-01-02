@@ -43,7 +43,10 @@ function toBytes(value: number, exponentOrUnit: number | unit) {
 }
 
 export default function MemorySelector(props: MemorySelectorProps) {
-  let exponent = 2;
+  let exponent =
+    +props.value < 1024
+      ? 0
+      : Math.floor(Math.log(+props.value) / Math.log(1024));
   const onChange = props.onChange;
   const [bytes, setBytes] = useState(+props.value);
   const [unit, setUnit] = useState<unit>(units[exponent]);
