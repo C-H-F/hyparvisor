@@ -255,128 +255,136 @@ export default function FileBrowser(props: {
             ].join(' ')}
           >
             {fsEntries
+              .map((entry, index) => ({ entry, index }))
               .filter(
                 (x) =>
-                  new RegExp(props.filter ?? '').test(x.name) ||
-                  x.type === 'dir'
+                  new RegExp(props.filter ?? '').test(x.entry.name) ||
+                  x.entry.type === 'dir'
               )
-              .map((entry, index) => (
-                <ContextMenu key={'contextMenu/' + index}>
-                  <ContextMenuTrigger>
-                    <div
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (e.ctrlKey) {
-                          setSelection([...selection, index]);
-                          return;
-                        }
-                        if (e.shiftKey && selection.length > 0) {
-                          const mainSelection = selection[selection.length - 1];
-                          const elements = range(mainSelection, index);
-                          setSelection([...elements, index, mainSelection]);
-                          return;
-                        }
-                        setSelection([index]);
-                      }}
-                      onDoubleClick={() => {
-                        if (entry.type !== 'dir') {
-                          if (props.onOpen) props.onOpen(entry);
-                          return;
-                        }
-                        let temp = path;
-                        if (!temp.endsWith('/')) temp += '/';
-                        temp += entry.name;
-                        pushPath(temp);
-                      }}
-                      className={[
-                        'fsEntry',
-                        selection.indexOf(index) >= 0 ? 'selected' : '',
-                      ].join(' ')}
-                    >
-                      {getFsTypeIcon(entry)}
-                      {entry.targetSize != null ? (
-                        <Progress
-                          className="absolute"
-                          value={
-                            entry.targetSize == 0
-                              ? -1
-                              : (100 / entry.targetSize) * entry.size
+              .map((x) => {
+                const entry = x.entry;
+                const index = x.index;
+                return (
+                  <ContextMenu key={'contextMenu/' + index}>
+                    <ContextMenuTrigger>
+                      <div
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (e.ctrlKey) {
+                            setSelection([...selection, index]);
+                            return;
                           }
-                        />
+                          if (e.shiftKey && selection.length > 0) {
+                            const mainSelection =
+                              selection[selection.length - 1];
+                            const elements = range(mainSelection, index);
+                            setSelection([...elements, index, mainSelection]);
+                            return;
+                          }
+                          setSelection([index]);
+                        }}
+                        onDoubleClick={() => {
+                          if (entry.type !== 'dir') {
+                            if (props.onOpen) props.onOpen(entry);
+                            return;
+                          }
+                          let temp = path;
+                          if (!temp.endsWith('/')) temp += '/';
+                          temp += entry.name;
+                          pushPath(temp);
+                        }}
+                        className={[
+                          'fsEntry',
+                          selection.indexOf(index) >= 0 ? 'selected' : '',
+                        ].join(' ')}
+                      >
+                        {getFsTypeIcon(entry)}
+                        {entry.targetSize != null ? (
+                          <Progress
+                            className="absolute"
+                            value={
+                              entry.targetSize == 0
+                                ? -1
+                                : (100 / entry.targetSize) * entry.size
+                            }
+                          />
+                        ) : (
+                          ''
+                        )}
+
+                        <span className="name">
+                          {entry.alias ?? entry.name}
+                        </span>
+
+                        <span className="permissions">{entry.permissions}</span>
+                        <span className="type">{entry.type}</span>
+                        <span className="user">{entry.user}</span>
+                        <span className="group">{entry.group}</span>
+                        <span className="size">
+                          {bytes.format(entry.size, {
+                            mode: 'binary',
+                          })}
+                        </span>
+                        <span className="date">
+                          {entry.dateChange ?? new Date().toISOString()}
+                        </span>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem>Cut</ContextMenuItem>
+                      <ContextMenuItem>Copy</ContextMenuItem>
+                      {props.rm ? (
+                        <ContextMenuItem
+                          onClick={async () => {
+                            //TODO: Use custom confirm dialog.
+                            if (
+                              !props.rm ||
+                              !confirm(
+                                'Are you sure you want to delete ' +
+                                  (entry.alias ?? entry.name) +
+                                  '?'
+                              )
+                            )
+                              return;
+                            await props.rm(entry.dir + '/' + entry.name);
+                            refreshPath();
+                          }}
+                        >
+                          Delete
+                        </ContextMenuItem>
                       ) : (
                         ''
                       )}
-
-                      <span className="name">{entry.alias ?? entry.name}</span>
-
-                      <span className="permissions">{entry.permissions}</span>
-                      <span className="type">{entry.type}</span>
-                      <span className="user">{entry.user}</span>
-                      <span className="group">{entry.group}</span>
-                      <span className="size">
-                        {bytes.format(entry.size, {
-                          mode: 'binary',
-                        })}
-                      </span>
-                      <span className="date">
-                        {entry.dateChange ?? new Date().toISOString()}
-                      </span>
-                    </div>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem>Cut</ContextMenuItem>
-                    <ContextMenuItem>Copy</ContextMenuItem>
-                    {props.rm ? (
-                      <ContextMenuItem
-                        onClick={async () => {
-                          //TODO: Use custom confirm dialog.
-                          if (
-                            !props.rm ||
-                            !confirm(
-                              'Are you sure you want to delete ' +
-                                (entry.alias ?? entry.name) +
-                                '?'
-                            )
-                          )
-                            return;
-                          await props.rm(entry.dir + '/' + entry.name);
-                          refreshPath();
-                        }}
-                      >
-                        Delete
-                      </ContextMenuItem>
-                    ) : (
-                      ''
-                    )}
-                    {props.mv ? (
-                      <ContextMenuItem
-                        onClick={async () => {
-                          setFsEntries([
-                            ...fsEntries.filter((x) => x !== entry),
-                          ]);
-                          setFsDummy({
-                            ...entry,
-                            apply: async (name) => {
-                              if (!props.mv) return;
-                              await props.mv(
-                                entry.dir + '/' + entry.name,
-                                entry.dir + '/' + name
-                              );
-                              await refreshPath();
-                            },
-                          });
-                        }}
-                      >
-                        Rename
-                      </ContextMenuItem>
-                    ) : (
-                      ''
-                    )}
-                    <ContextMenuItem>Properties</ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              ))}
+                      {props.mv ? (
+                        <ContextMenuItem
+                          onClick={async () => {
+                            setFsEntries([
+                              ...fsEntries.filter((x) => x !== entry),
+                            ]);
+                            setFsDummy({
+                              ...entry,
+                              apply: async (name) => {
+                                if (!props.mv) return;
+                                await props.mv(
+                                  entry.dir + '/' + entry.name,
+                                  entry.dir + '/' + name
+                                );
+                                await refreshPath();
+                              },
+                            });
+                          }}
+                        >
+                          Rename
+                        </ContextMenuItem>
+                      ) : (
+                        ''
+                      )}
+                      <ContextMenuItem>Properties</ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              })}
             {fsDummy ? (
               <div key="/DUMMY/" className="fsEntry">
                 {getFsTypeIcon(fsDummy)}
