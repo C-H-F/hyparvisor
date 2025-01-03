@@ -502,6 +502,7 @@ export default function ShowVm() {
                                 type: 'file',
                                 source: { type: 'file', value: file },
                                 device: 'disk',
+                                target: { bus: 'sata', dev: getNextHdDev() },
                               });
                             }}
                           >
