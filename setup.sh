@@ -78,6 +78,7 @@ if [ "$disk" != "" ]; then
     mkfs.msdos -F 32 "${disk}1"
     mkfs.ext4 -qF "${disk}2"
     mount "${disk}2" "/mnt"
+    mount "${disk}1" "/mnt/boot"
   else
     parted -s "$disk" "mklabel" "gpt" "mkpart" "system" "ext4" "1MiB" "100%"
     mkfs.ext4 -qF "${disk}1"
@@ -113,7 +114,6 @@ systemctl enable dhcpcd
 
 if [ "$efi" = true ]; then
   echo "
-  mount \"${disk}1\" /boot
   mkdir -p /boot/EFI/syslinux
   pacman --noconfirm -S linux efibootmgr
   cp -r /usr/lib/syslinux/efi64/* /boot/EFI/syslinux
@@ -140,10 +140,10 @@ rm /mnt/root/setup.sh
 
 escDisk=$( echo "$disk" | sed -e "s/\//\\\\\//g" )
 if [ "$efi" = true ]; then
-  sed -i "s/dev\/sda3/${escDisk}2/g" /mnt/boot/EFI/syslinux/syslinux.cfg
+  sed -i "s/\/dev\/sda3/${escDisk}2/g" /mnt/boot/EFI/syslinux/syslinux.cfg
   sed -i "s/\.\.\//\.\.\/\.\.\//g" /mnt/boot/EFI/syslinux/syslinux.cfg
 else
-  sed -i "s/dev\/sda3/${escDisk}1/g" /mnt/boot/syslinux/syslinux.cfg
+  sed -i "s/\/dev\/sda3/${escDisk}1/g" /mnt/boot/syslinux/syslinux.cfg
 fi
 
 mkdir /mnt/opt/hyparvisor
